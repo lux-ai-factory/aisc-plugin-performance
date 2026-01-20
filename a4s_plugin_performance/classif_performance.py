@@ -66,15 +66,6 @@ class ClassificationPerformancePlugin(BaseEvaluationPlugin[ConfigForSchema]):
 
     def evaluate(self, config_data: dict) -> list[Measure]:
         from onnxruntime import InferenceSession
-        from sklearn.metrics import (
-            accuracy_score,
-            f1_score,
-            matthews_corrcoef,
-            precision_score,
-            recall_score,
-            roc_auc_score,
-            confusion_matrix
-        )
         import pandas as pd
         import numpy as np
         
@@ -84,6 +75,8 @@ class ClassificationPerformancePlugin(BaseEvaluationPlugin[ConfigForSchema]):
         session: InferenceSession = self.get_model()
 
         # TODO: We need to find a way to handle datashape?
+        # More specifically, the input features for the model?
+        # Thinking: use config_data to pass with target feature name and date feature name?
         x_test_np = df_test[
             [f for f in df_test.columns if f not in ["issue_d", "charged_off"]]
         ].to_numpy()
