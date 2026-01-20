@@ -1,11 +1,10 @@
 # src/my_a4s_plugin/plugin.py
-import csv
 import io
+from typing import Any
 from a4s_plugin_interface.models.measure import Measure
 from a4s_plugin_interface import metric
 from a4s_plugin_interface.base_evaluation_plugin import BaseEvaluationPlugin
 from a4s_plugin_interface.input_providers.base_input_provider import BaseInputProvider
-from a4s_plugin_interface.input_providers.csv_input_provider import CsvInputProvider
 from pydantic import BaseModel
 
 
@@ -22,13 +21,12 @@ class ConfigForSchema(BaseModel):
 class ParquetInputProvider(BaseInputProvider):
     """
     A concrete implementation of BaseInputProvider for parquet files.
-    Parses the file content into a list of dictionaries, where each dict represents a row.
+    Parses the file content into a pandas DataFrame.
     """
-    import pandas as pd
 
-    def _read_data(self, file_content) -> pd.DataFrame:
+    def _read_data(self, file_content) -> Any:
         """
-        Converts parquet bytes into a list of .
+        Converts parquet bytes into a pandas DataFrame.
         """
         import pandas as pd
         
@@ -87,6 +85,8 @@ class ClassificationPerformancePlugin(BaseEvaluationPlugin[ConfigForSchema]):
         y_pred = np.argmax(y_pred_proba, axis=1)
 
 
+        # Not sure it's the best way to pass data between methods
+        # Maybe better with *args and **kwargs?
         return {
             "y_true": y_true, 
             "y_pred": y_pred
