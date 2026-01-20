@@ -1,0 +1,16 @@
+[project]
+name = "a4s-plugin-performance"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "a4s-plugin-interface",
+    "numpy>=2.4.1",
+    "onnxruntime>=1.23.2",
+    "pandas>=2.3.3",
+    "scikit-learn>=1.8.0",
+]
+
+[tool.uv.sources]
+a4s-plugin-interface = { git = "https://github.com/lux-ai-factory/a4s-plugin-interface" }
