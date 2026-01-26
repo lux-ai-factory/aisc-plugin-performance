@@ -74,7 +74,7 @@ class DateIterator:
         self.date_feature = date_feature
 
         if self.date_feature is None:
-            self.df_date_series = self.df.index
+            self.df_date_series = df.index
         else:
             self.df_date_series = pd.to_datetime(df[self.date_feature])
 
@@ -85,7 +85,7 @@ class DateIterator:
         self.window = window
         self.freq = freq
 
-        if date_round is None or window is None or freq is None:
+        if None in (self.date_feature, date_round, window, freq):
             self.batches = [(self.start_date, self.end_date + 1)]
         else:
             self.batches = get_date_batches(
