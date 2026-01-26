@@ -1,6 +1,7 @@
 from a4s_plugin_interface.models.measure import Measure
 
-from .utils import PerformancePluginFromDatasetConfig, add_metrics
+from .iterators import DateIterator
+from .utils import PerformancePluginFromDatasetConfig, add_metrics, merge_dicts
 
 
 @add_metrics
@@ -13,7 +14,7 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
         "R2",
     ]
 
-    def _calculate_metrics(self, y_true, y_pred):
+    def _calculate_metrics(self, y_true, y_pred, date=None):
         from sklearn.metrics import (
             mean_absolute_error,
             root_mean_squared_error,
@@ -31,7 +32,7 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
         ]
 
         return {
-            name: fct(y_true, y_pred)
+            name: {"score": fct(y_true, y_pred), "date": date}
             for name, fct in zip(self.metric_names, metric_functions)
         }
 
@@ -59,7 +60,6 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
         return y_pred
 
     def evaluate(self, config_data: dict) -> list[Measure]:
-        import numpy as np
         import pandas as pd
         from onnxruntime import InferenceSession
 
@@ -70,17 +70,26 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
 
         target_col = config.target_feature
         date_col = config.date_feature
-        # frequency = config.frequency
-        # window_size = config.frequency
+        frequency = config.frequency
+        window_size = config.frequency
+        # TODO: add `date_round`
 
         columns_features = [
             f.name for f in config.features if f.name not in (target_col, date_col)
         ]
 
-        x_test_np = df_test[columns_features].to_numpy(dtype=np.float32)
+        if date_col is not None:
+            df_test[date_col] = pd.to_datetime(df_test[date_col])
 
+        x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
 
         y_pred = self._get_y_pred(session, x_test_np)
 
-        return self._calculate_metrics(y_true, y_pred)
+        df_date_iterator = DateIterator(df_test, date_col, frequency, window_size)
+        return merge_dicts(
+            [
+                self._calculate_metrics(y_true[mask], y_pred[mask], date=date)
+                for date, mask in df_date_iterator
+            ]
+        )

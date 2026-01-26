@@ -3,6 +3,8 @@ import logging
 from enum import Enum
 from typing import Any
 from abc import abstractmethod
+from collections import defaultdict
+
 import pandas as pd
 from pydantic import BaseModel, Field, model_validator
 
@@ -15,6 +17,17 @@ from a4s_plugin_interface.base_evaluation_plugin import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def merge_dicts(dicts: list[dict]) -> dict:
+    merged = defaultdict(lambda: defaultdict(list))
+
+    for d in dicts:
+        for key, values in d.items():
+            for k, v in values.items():
+                merged[key][k].append(v)
+
+    return {m: dict(vals) for m, vals in merged.items()}
 
 
 class FeatureType(str, Enum):
@@ -113,20 +126,28 @@ def add_metrics(cls):
 
         @metric(name)
         def fct(self, evaluation_output: dict, _name=name) -> list[Measure]:
-            score: float | None = evaluation_output.get(_name)
-            if score is None:
+            values: dict = evaluation_output.get(_name, {})
+            scores = values.get("score", [])
+            dates = values.get("date", [])
+
+            if len(scores) == 0:
                 return []
 
-            if isinstance(score, (int, float)):
-                return [Measure(name=_name, score=float(score))]
+            if isinstance(scores[0], (int, float)):
+                return [
+                    Measure(name=_name, score=float(score), date=date)
+                    for (score, date) in zip(scores, dates)
+                ]
             else:
-                max_i, max_j = score.shape
+                max_i, max_j = scores[0].shape
                 return [
                     Measure(
                         name=_name,
                         score=float(score[i][j]),
+                        date=date,
                         description=f"({i},{j})/({max_i},{max_j})",
                     )
+                    for (score, date) in zip(scores, dates)
                     for i in range(max_i)
                     for j in range(max_j)
                 ]
@@ -236,7 +257,7 @@ class PerformancePluginFromDatasetConfig(BaseEvaluationPlugin[ConfigForm]):
         ):
             possible_date_features = [
                 f["name"]
-                for f in form_data["features"]
+                for f in form_data.get("features", [])
                 if f["type"] in (FeatureType.DATE, FeatureType.CATEGORICAL)
             ]
             if possible_date_features:
@@ -258,7 +279,7 @@ class PerformancePluginFromDatasetConfig(BaseEvaluationPlugin[ConfigForm]):
         ):
             possible_target_features = [
                 f["name"]
-                for f in form_data["features"]
+                for f in form_data.get("features", [])
                 if f["type"]
                 in (FeatureType.INTEGER, FeatureType.FLOAT, FeatureType.CATEGORICAL)
             ]
