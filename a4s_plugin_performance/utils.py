@@ -137,7 +137,7 @@ def add_metrics(cls):
 
             if isinstance(scores[0], (int, float)):
                 return [
-                    Measure(name=_name, score=float(score), date=date)
+                    Measure(name=_name, score=float(score), time=date)
                     for (score, date) in zip(scores, dates)
                 ]
             else:
@@ -146,7 +146,7 @@ def add_metrics(cls):
                     Measure(
                         name=_name,
                         score=float(score[i][j]),
-                        date=date,
+                        time=date,
                         description=f"({i},{j})/({max_i},{max_j})",
                     )
                     for (score, date) in zip(scores, dates)
