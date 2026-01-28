@@ -123,6 +123,6 @@ class DateIterator:
         date = (
             None
             if self.date_feature is None
-            else self.df_date_series.max().to_pydatetime()
+            else self.df_date_series[mask].max().to_pydatetime()
         )
         return date, mask
