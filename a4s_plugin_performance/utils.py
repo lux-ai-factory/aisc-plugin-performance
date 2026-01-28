@@ -68,8 +68,10 @@ class ConfigForm(BaseModel):
 
     @model_validator(mode="after")
     def validate_special_features(self):
-        self.date_feature = self.date_feature or None
+        self.frequency = self.frequency or None
+        self.window_size = self.window_size or None
         self.target_feature = self.target_feature or None
+        self.date_feature = self.date_feature or None
 
         if self.target_feature is None:
             return self
