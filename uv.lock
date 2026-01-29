@@ -13,7 +13,7 @@ resolution-markers = [
 [[package]]
 name = "a4s-plugin-interface"
 version = "0.1.0"
-source = { git = "https://github.com/lux-ai-factory/a4s-plugin-interface#700900c4b6ef8e6ed1d58032e57dbd3e9398c3d9" }
+source = { git = "https://github.com/lux-ai-factory/a4s-plugin-interface#fc5dc7319ede56cda0961f5224f6b1475ecddd5c" }
 dependencies = [
     { name = "pydantic" },
 ]

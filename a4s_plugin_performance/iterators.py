@@ -81,11 +81,11 @@ class DateIterator:
         self.start_date = self.df_date_series.min()
         self.end_date = self.df_date_series.max()
 
-        self.date_round = date_round
-        self.window = window
-        self.freq = freq
+        self.date_round = date_round or None
+        self.window = window or None
+        self.freq = freq or None
 
-        if None in (self.date_feature, date_round, window, freq):
+        if None in (self.date_feature, self.date_round, self.window, self.freq):
             offset = 1 if self.date_feature is None else pd.Timedelta(days=1)
             self.batches = [(self.start_date, self.end_date + offset)]
         else:

@@ -46,14 +46,14 @@ class Feature(BaseModel):
 
 class ConfigForm(BaseModel):
     frequency: str = Field(
-        default=None,
+        default="",
         title="Frequency",
         description="Data frequency for time-series analysis (e.g., '30D', '1M')",
         examples=["30D", "1M", "7D"],
     )
 
     window_size: str = Field(
-        default=None,
+        default="",
         title="Window Size",
         description="Analysis window size (e.g., '90 days', '3 months')",
         examples=["90 days", "3 months"],
@@ -68,8 +68,8 @@ class ConfigForm(BaseModel):
 
     @model_validator(mode="after")
     def validate_special_features(self):
-        self.frequency = self.frequency or None
-        self.window_size = self.window_size or None
+        self.frequency = self.frequency
+        self.window_size = self.window_size
         self.target_feature = self.target_feature or None
         self.date_feature = self.date_feature or None
 
