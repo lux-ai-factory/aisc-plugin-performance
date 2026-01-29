@@ -17,6 +17,10 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
         "MCC",
     ]
 
+    @property
+    def display_icon(self) -> str:
+        return "category"
+
     def _calculate_metrics(self, y_true, y_pred, date=None):
         from sklearn.metrics import (
             accuracy_score,

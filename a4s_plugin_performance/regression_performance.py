@@ -14,6 +14,10 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
         "R2",
     ]
 
+    @property
+    def display_icon(self) -> str:
+        return "trending_up"
+
     def _calculate_metrics(self, y_true, y_pred, date=None):
         from sklearn.metrics import (
             mean_absolute_error,
