@@ -1,4 +1,4 @@
-from a4s_plugin_interface.models.measure import Measure
+from a4s_plugin_interface.models.measure import Measure, MetricVisualization, ChartType
 
 from .iterators import DateIterator
 from .utils import PerformancePluginFromDatasetConfig, add_metrics, merge_dicts
@@ -93,3 +93,11 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
                 for date, mask in df_date_iterator
             ]
         )
+
+    def get_metric_visualizations(self) -> list[MetricVisualization]:
+        table = MetricVisualization(
+            chart_type=ChartType.TABLE, metrics=self.get_metrics()
+        )
+
+        line = MetricVisualization(chart_type=ChartType.LINE, metrics=self.metric_names)
+        return [table, line]

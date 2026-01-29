@@ -1,5 +1,6 @@
 from functools import partial
-from a4s_plugin_interface.models.measure import Measure
+
+from a4s_plugin_interface.models.measure import Measure, MetricVisualization, ChartType
 
 from .iterators import DateIterator
 from .utils import PerformancePluginFromDatasetConfig, add_metrics, merge_dicts
@@ -114,3 +115,19 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
                 for date, mask in df_date_iterator
             ]
         )
+
+    def get_metric_visualizations(self) -> list[MetricVisualization]:
+        table = MetricVisualization(
+            chart_type=ChartType.TABLE, metrics=self.get_metrics()
+        )
+
+        line_chart_metrics = [
+            metric_name
+            for metric_name in self.metric_names
+            if "Matrix" not in metric_name
+        ]
+
+        line = MetricVisualization(
+            chart_type=ChartType.LINE, metrics=line_chart_metrics
+        )
+        return [table, line]
