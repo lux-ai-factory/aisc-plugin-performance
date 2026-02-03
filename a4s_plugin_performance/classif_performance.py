@@ -120,7 +120,9 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
             ]
         )
 
-    def get_metric_visualizations(self) -> list[MetricVisualization]:
+    def get_metric_visualizations(
+        self, is_multivalued: bool = False
+    ) -> list[MetricVisualization]:
         table = MetricVisualization(
             chart_type=ChartType.TABLE, metrics=self.get_metrics()
         )
@@ -131,7 +133,7 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
             if "Matrix" not in metric_name
         ]
 
-        line = MetricVisualization(
-            chart_type=ChartType.LINE, metrics=line_chart_metrics
-        )
-        return [table, line]
+        chart_type = ChartType.LINE if is_multivalued else ChartType.RADAR
+        vis = MetricVisualization(chart_type=chart_type, metrics=line_chart_metrics)
+
+        return [table, vis]
