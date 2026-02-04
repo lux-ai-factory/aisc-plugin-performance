@@ -105,7 +105,7 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
             chart_type=ChartType.TABLE, metrics=self.get_metrics()
         )
 
-        chart_type = ChartType.LINE if is_multivalued else ChartType.SCATTER
+        chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
         vis = MetricVisualization(chart_type=chart_type, metrics=self.metric_names)
 
         return [table, vis]
