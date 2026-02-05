@@ -96,7 +96,7 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
         target_col = config.target_feature
         date_col = config.date_feature
         frequency = config.frequency
-        window_size = config.frequency
+        window_size = config.window_size
         # TODO: add `date_round`
 
         columns_features = [
