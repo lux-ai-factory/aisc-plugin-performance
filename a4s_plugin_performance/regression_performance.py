@@ -1,6 +1,5 @@
 from a4s_plugin_interface.models.measure import Measure, MetricVisualization, ChartType
 
-from .iterators import DateIterator
 from .utils import PerformancePluginFromDatasetConfig, add_metrics, merge_dicts
 
 
@@ -69,28 +68,26 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
 
         config = self.validate_config_form_data(config_data)
 
-        df_test: pd.DataFrame = self.get_dataset()
-        session: InferenceSession = self.get_model()
-
         target_col = config.target_feature
-        date_col = config.date_feature
+        date_feature = config.date_feature
         frequency = config.frequency
         window_size = config.window_size
         # TODO: add `date_round`
 
         columns_features = [
-            f.name for f in config.features if f.name not in (target_col, date_col)
+            f.name for f in config.features if f.name not in (target_col, date_feature)
         ]
 
-        if date_col is not None:
-            df_test[date_col] = pd.to_datetime(df_test[date_col])
-
+        df_test: pd.DataFrame = self.get_dataset()
         x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
 
+        session: InferenceSession = self.get_model()
         y_pred = self._get_y_pred(session, x_test_np)
 
-        df_date_iterator = DateIterator(df_test, date_col, frequency, window_size)
+        df_date_iterator = self.dataset_input_provider.iter(
+            date_feature, frequency, window_size
+        )
         return merge_dicts(
             [
                 self._calculate_metrics(y_true[mask], y_pred[mask], date=date)

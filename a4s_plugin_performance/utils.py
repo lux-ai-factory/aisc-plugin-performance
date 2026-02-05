@@ -16,6 +16,8 @@ from a4s_plugin_interface.base_evaluation_plugin import (
     PluginFeatureFlags,
 )
 
+from .iterators import DateIterator
+
 logger = logging.getLogger(__name__)
 
 
@@ -112,6 +114,20 @@ class DataFrameProvider(BaseInputProvider):
                 return pd.read_csv(file_stream)
             except Exception as e:
                 raise ValueError("File is neither a valid Parquet nor CSV.") from e
+
+    def iter(
+        self,
+        date_feature: str,
+        frequency: str,
+        window_size: str,
+        date_round: str = "1 D",
+    ):
+        if date_feature is not None:
+            self._data[date_feature] = pd.to_datetime(self._data[date_feature])
+
+        yield from DateIterator(
+            self._data, date_feature, frequency, window_size, date_round
+        )
 
 
 class OnnxInputProvider(BaseInputProvider):
