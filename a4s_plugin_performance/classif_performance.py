@@ -117,9 +117,9 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
             ]
         )
 
-    def get_metric_visualizations(
-        self, is_multivalued: bool = False
-    ) -> list[MetricVisualization]:
+    def get_metric_visualizations(self, config_data: dict) -> list[MetricVisualization]:
+        config = self.validate_config_form_data(config_data)
+
         table = MetricVisualization(
             chart_type=ChartType.TABLE, metrics=self.get_metrics()
         )
@@ -130,6 +130,11 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
             if "Matrix" not in metric_name
         ]
 
+        # df_date_iterator = self.dataset_input_provider.iter(
+        #     config.date_feature, config.frequency, config.window_size
+        # )
+        # is_multivalued = len(list(islice(df_date_iterator, 2))) > 1
+        is_multivalued = config.date_feature and config.frequency and config.window_size
         chart_type = ChartType.LINE if is_multivalued else ChartType.RADAR
         vis = MetricVisualization(chart_type=chart_type, metrics=line_chart_metrics)
 

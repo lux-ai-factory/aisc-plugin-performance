@@ -95,13 +95,14 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
             ]
         )
 
-    def get_metric_visualizations(
-        self, is_multivalued: bool = False
-    ) -> list[MetricVisualization]:
+    def get_metric_visualizations(self, config_data: dict) -> list[MetricVisualization]:
+        config = self.validate_config_form_data(config_data)
+
         table = MetricVisualization(
             chart_type=ChartType.TABLE, metrics=self.get_metrics()
         )
 
+        is_multivalued = config.date_feature and config.frequency and config.window_size
         chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
         vis = MetricVisualization(chart_type=chart_type, metrics=self.metric_names)
 
