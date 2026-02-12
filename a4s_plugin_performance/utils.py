@@ -177,7 +177,7 @@ def add_metrics(cls):
                     Measure(
                         name=_name,
                         score=float(score[i][j]),
-                        description=f"({i},{j})/({max_i},{max_j})",
+                        description=f"({i + 1},{j + 1})/({max_i},{max_j})",
                         **({"time": date} if date is not None else {}),
                     )
                     for (score, date) in zip(scores, dates)

@@ -166,6 +166,9 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
                 chart_type=per_chart_type, metrics=performance_chart_metrics
             ),
             MetricVisualization(
+                chart_type=cal_chart_type, metrics=["Confusion-Matrix"]
+            ),
+            MetricVisualization(
                 chart_type=cal_chart_type, metrics=self.calibration_metric_names
             ),
         ]
