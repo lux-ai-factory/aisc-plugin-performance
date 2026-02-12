@@ -5,13 +5,17 @@ from .utils import PerformancePluginFromDatasetConfig, add_metrics, merge_dicts
 
 @add_metrics
 class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
-    metric_names = [
+    performance_metric_names = [
         "Mean Absolute Error",
         "Mean Squared Error",
         "Root Mean Squared Error",
         "Explained Variance",
         "R2",
     ]
+
+    @classmethod
+    def metric_names(cls):
+        return cls.performance_metric_names
 
     @property
     def display_icon(self) -> str:
@@ -26,7 +30,7 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
             r2_score,
         )
 
-        metric_functions = [
+        performance_metric_functions = [
             mean_absolute_error,
             root_mean_squared_error,
             mean_squared_error,
@@ -36,7 +40,9 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
 
         return {
             name: {"score": fct(y_true, y_pred), "date": date}
-            for name, fct in zip(self.metric_names, metric_functions)
+            for name, fct in zip(
+                self.performance_metric_names, performance_metric_functions
+            )
         }
 
     def _get_y_pred(self, session, x_test_np):
@@ -104,6 +110,8 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
 
         is_multivalued = config.date_feature and config.frequency and config.window_size
         chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
-        vis = MetricVisualization(chart_type=chart_type, metrics=self.metric_names)
+        vis = MetricVisualization(
+            chart_type=chart_type, metrics=self.performance_metric_names
+        )
 
         return [table, vis]

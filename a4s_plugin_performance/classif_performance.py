@@ -7,7 +7,7 @@ from .utils import PerformancePluginFromDatasetConfig, add_metrics, merge_dicts
 
 @add_metrics
 class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
-    metric_names = [
+    performance_metric_names = [
         "Accuracy",
         "Precision",
         "Recall",
@@ -16,11 +16,21 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
         "MCC",
     ]
 
+    calibration_metric_names = [
+        "SCE",
+        "ECE",
+        "MCE",
+    ]
+
+    @classmethod
+    def metric_names(cls):
+        return cls.performance_metric_names + cls.calibration_metric_names
+
     @property
     def display_icon(self) -> str:
         return "category"
 
-    def _calculate_metrics(self, y_true, y_pred, date=None):
+    def _calculate_metrics(self, y_true, y_pred_proba, y_pred, date=None):
         from sklearn.metrics import (
             accuracy_score,
             precision_score,
@@ -29,8 +39,9 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
             confusion_matrix,
             matthews_corrcoef,
         )
+        from .calibration_metrics import classification_calibration_score_metrics
 
-        metric_functions = [
+        performance_metric_functions = [
             accuracy_score,
             partial(precision_score, zero_division=0),
             partial(recall_score, zero_division=0),
@@ -39,10 +50,19 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
             matthews_corrcoef,
         ]
 
-        return {
+        metrics = {
             name: {"score": fct(y_true, y_pred), "date": date}
-            for name, fct in zip(self.metric_names, metric_functions)
+            for name, fct in zip(
+                self.performance_metric_names, performance_metric_functions
+            )
         }
+        calibration_dicts = classification_calibration_score_metrics(
+            y_true, y_pred_proba, y_pred
+        )
+        for d in calibration_dicts:
+            metrics[d["name"]] = {"score": d["score"], "date": date}
+
+        return metrics
 
     def _get_y_pred_probs(self, session, x_test_np):
         import numpy as np
@@ -112,7 +132,9 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
         )
         return merge_dicts(
             [
-                self._calculate_metrics(y_true[mask], y_pred[mask], date=date)
+                self._calculate_metrics(
+                    y_true[mask], y_pred_proba[mask], y_pred[mask], date=date
+                )
                 for date, mask in df_date_iterator
             ]
         )
@@ -124,9 +146,9 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
             chart_type=ChartType.TABLE, metrics=self.get_metrics()
         )
 
-        line_chart_metrics = [
+        performance_chart_metrics = [
             metric_name
-            for metric_name in self.metric_names
+            for metric_name in self.performance_metric_names
             if "Matrix" not in metric_name
         ]
 
@@ -134,8 +156,18 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
         #     config.date_feature, config.frequency, config.window_size
         # )
         # is_multivalued = len(list(islice(df_date_iterator, 2))) > 1
-        is_multivalued = config.date_feature and config.frequency and config.window_size
-        chart_type = ChartType.LINE if is_multivalued else ChartType.RADAR
-        vis = MetricVisualization(chart_type=chart_type, metrics=line_chart_metrics)
 
-        return [table, vis]
+        is_multivalued = config.date_feature and config.frequency and config.window_size
+        per_chart_type = ChartType.LINE if is_multivalued else ChartType.RADAR
+        cal_chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
+
+        charts = [
+            MetricVisualization(
+                chart_type=per_chart_type, metrics=performance_chart_metrics
+            ),
+            MetricVisualization(
+                chart_type=cal_chart_type, metrics=self.calibration_metric_names
+            ),
+        ]
+
+        return [table, *charts]
