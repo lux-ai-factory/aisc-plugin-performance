@@ -99,7 +99,7 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
             f.name for f in config.features if f.name not in (target_col, date_feature)
         ]
 
-        df_test: pd.DataFrame = self.get_dataset()
+        df_test: pd.DataFrame = self.get_dataset()["test"]
         x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
 

@@ -102,7 +102,16 @@ class ConfigForm(BaseModel):
 
 
 class DataFrameProvider(BaseInputProvider):
-    def _read_data(self, file_content: bytes) -> Any:
+    def _read_data(self, file_content: bytes | list[bytes]) -> dict[str, Any]:
+        if isinstance(file_content, bytes):
+            return {"test": self._read_single_file(file_content)}
+
+        return {
+            name: self._read_single_file(f)
+            for name, f in zip(("train", "test"), file_content)
+        }
+
+    def _read_single_file(self, file_content: bytes) -> Any:
         import pandas as pd
 
         file_stream = io.BytesIO(file_content)
@@ -123,10 +132,12 @@ class DataFrameProvider(BaseInputProvider):
         date_round: str = "1 D",
     ):
         if date_feature is not None:
-            self._data[date_feature] = pd.to_datetime(self._data[date_feature])
+            self._data["test"][date_feature] = pd.to_datetime(
+                self._data["test"][date_feature]
+            )
 
         yield from DateIterator(
-            self._data, date_feature, frequency, window_size, date_round
+            self._data["test"], date_feature, frequency, window_size, date_round
         )
 
 
@@ -221,7 +232,7 @@ class PerformancePluginFromDatasetConfig(BaseEvaluationPlugin[ConfigForm]):
             target_feature=None,
         )
 
-        df: pd.DataFrame = self.get_dataset()
+        df: pd.DataFrame = self.get_dataset()["test"]
 
         for col_name in df.columns:
             col_data = df[col_name]
@@ -323,7 +334,7 @@ class PerformancePluginFromDatasetConfig(BaseEvaluationPlugin[ConfigForm]):
         return form_data, config_schema, ui_schema
 
     def set_dataset_input_provider(
-        self, file_content: bytes | None
+        self, file_content: bytes | list[bytes] | None
     ) -> BaseInputProvider:
         self.dataset_input_provider = DataFrameProvider(file_content)
         return self.dataset_input_provider
