@@ -151,7 +151,7 @@ class OnnxInputProvider(BaseInputProvider):
 
 def add_metrics(cls):
     # this a class decorator that automatically adds the @metric decorator
-    for name in cls.metric_names:
+    for name in cls.metric_names():
 
         @metric(name)
         def fct(self, evaluation_output: dict, _name=name) -> list[Measure]:
