@@ -1,5 +1,6 @@
 from functools import partial
 
+from a4s_plugin_interface import TaskProgress
 from a4s_plugin_interface.models.measure import Measure, MetricVisualization, ChartType
 
 from .utils import PerformancePluginFromDatasetConfig, add_metrics, merge_dicts
@@ -127,17 +128,23 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
         y_pred_proba = self._get_y_pred_probs(session, x_test_np)
         y_pred = np.argmax(y_pred_proba, axis=1)
 
-        df_date_iterator = self.dataset_input_provider.iter(
-            date_feature, frequency, window_size
+        dates_masks = list(
+            self.dataset_input_provider.iter(date_feature, frequency, window_size)
         )
-        return merge_dicts(
-            [
+        iterations = len(dates_masks)
+
+        results = []
+        for i, (date, mask) in enumerate(dates_masks, start=1):
+            results.append(
                 self._calculate_metrics(
                     y_true[mask], y_pred_proba[mask], y_pred[mask], date=date
                 )
-                for date, mask in df_date_iterator
-            ]
-        )
+            )
+            self.report_progress(
+                TaskProgress(progress=i / iterations, extra={"iteration": i})
+            )
+
+        return merge_dicts(results)
 
     def get_metric_visualizations(self, config_data: dict) -> list[MetricVisualization]:
         config = self.validate_config_form_data(config_data)
