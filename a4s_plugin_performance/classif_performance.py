@@ -48,7 +48,7 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
             partial(recall_score, zero_division=0),
             partial(f1_score, zero_division=0),
             confusion_matrix,
-            matthews_corrcoef,
+            lambda y_true, y_pred: (matthews_corrcoef(y_true, y_pred) + 1) / 2,
         ]
 
         metrics = {
