@@ -81,7 +81,7 @@ class OnnxInputProvider(BaseInputProvider):
         arr = np.array(raw)
         if probabilities and arr.ndim == 1:
             arr = arr[:, None]
-        if not probabilities:
+        if not probabilities and arr.ndim > 1 and arr.shape[-1] == 1:
             arr = arr.squeeze(-1)
 
         return arr.astype(np.float32)
