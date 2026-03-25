@@ -159,12 +159,16 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
         self, file_content: bytes | list[bytes] | None
     ) -> DataFrameProvider:
         self.logger.debug("Setting dataset input provider")
-        self.dataset_input_provider = DataFrameProvider(file_content)  # ty: ignore[invalid-argument-type]
+        self.dataset_input_provider = DataFrameProvider(
+            file_content  # ty: ignore[invalid-argument-type]
+        )
         return self.dataset_input_provider
 
     def set_model_input_provider(self, file_content: bytes | None) -> OnnxInputProvider:
         self.logger.debug("Setting model input provider (ONNX)")
-        self.model_input_provider = OnnxInputProvider(file_content)  # ty: ignore[invalid-argument-type]
+        self.model_input_provider = OnnxInputProvider(
+            file_content  # ty: ignore[invalid-argument-type]
+        )
         return self.model_input_provider
 
     @abstractmethod

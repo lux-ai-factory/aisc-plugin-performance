@@ -21,6 +21,7 @@ a4s-plugin-interface = { git = "https://github.com/lux-ai-factory/a4s-plugin-int
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.5.1",
     "pyarrow>=23.0.1",
     "pytest>=9.0.2",
     "ruff>=0.15.7",

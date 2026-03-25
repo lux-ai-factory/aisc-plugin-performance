@@ -47,7 +47,9 @@ class OnnxInputProvider(BaseInputProvider):
         else:
             target_dtype = np.float32  # default fallback
 
-        x = np.ascontiguousarray(x_arr.astype(target_dtype))  # ty: ignore[no-matching-overload]
+        x = np.ascontiguousarray(
+            x_arr.astype(target_dtype)  # ty: ignore[no-matching-overload]
+        )
         if x.ndim == 1:
             x = x.reshape(1, -1)
 
