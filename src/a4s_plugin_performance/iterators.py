@@ -4,9 +4,9 @@ import pandas as pd
 def get_date_batches(
     start_date: pd.Timestamp,
     end_date: pd.Timestamp,
-    freq: str,
-    window: str,
-    date_round: str,
+    freq: str | None,
+    window: str | None,
+    date_round: str | None,
 ) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
     """Generate a list of date batches based on specified parameters.
 
@@ -57,10 +57,10 @@ class DateIterator:
     def __init__(
         self,
         df: pd.DataFrame,
-        date_feature: str,
-        freq: str,
-        window: str,
-        date_round: str = "1 D",
+        date_feature: str | None,
+        freq: str | None,
+        window: str | None,
+        date_round: str | None = "1 D",
     ):
         """Initialize the DateIterator.
 

@@ -1,11 +1,16 @@
 from a4s_plugin_interface import TaskProgress
-from a4s_plugin_interface.models.measure import Measure, MetricVisualization, ChartType
+from a4s_plugin_interface.models.measure import MetricVisualization, ChartType
 
-from .utils import PerformancePluginFromDatasetConfig, add_metrics, merge_dicts
+from ..utils import add_metrics, merge_dicts
+from ..base_performance_plugin import BasePerformanceEvaluationPlugin
+from ..data_input_provider import DataFrameProvider
+from ..model_input_provider import OnnxInputProvider
 
 
 @add_metrics
-class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
+class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
+    plugin_name = "Regression Performance"
+
     performance_metric_names = [
         "Mean Absolute Error",
         "Mean Squared Error",
@@ -46,32 +51,8 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
             )
         }
 
-    def _get_y_pred(self, session, x_test_np):
-        import numpy as np
-
-        expected = session.get_inputs()[0].type  # e.g., "tensor(double)"
-        if "tensor(double)" in expected:
-            dtype = np.float64
-        elif "tensor(float)" in expected:
-            dtype = np.float32
-        else:
-            dtype = x_test_np.dtype  # fallback
-
-        X = np.asarray(x_test_np, dtype=dtype)
-        X = np.ascontiguousarray(X)
-
-        if X.ndim == 1:
-            X = X.reshape(1, -1)
-
-        input_name = session.get_inputs()[0].name
-        output_name = session.get_outputs()[0].name
-        pred_onx = session.run([output_name], {input_name: X})[0]
-        y_pred = np.asarray(pred_onx).squeeze(-1)
-        return y_pred
-
-    def evaluate(self, config_data: dict) -> list[Measure]:
+    def evaluate(self, config_data: dict) -> dict[str, dict[str, list]]:
         import pandas as pd
-        from onnxruntime import InferenceSession
 
         config = self.validate_config_form_data(config_data)
 
@@ -89,9 +70,10 @@ class RegressionPerformancePlugin(PerformancePluginFromDatasetConfig):
         x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
 
-        session: InferenceSession = self.get_model()
-        y_pred = self._get_y_pred(session, x_test_np)
+        assert isinstance(self.model_input_provider, OnnxInputProvider)
+        y_pred = self.model_input_provider.predict(x_test_np, probabilities=False)
 
+        assert isinstance(self.dataset_input_provider, DataFrameProvider)
         dates_masks = list(
             self.dataset_input_provider.iter(date_feature, frequency, window_size)
         )

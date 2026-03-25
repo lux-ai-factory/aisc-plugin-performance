@@ -24,13 +24,6 @@ We report for instance the MSE (mean squared error), RMSE (root mean squared err
 
 ```bash
 .
-├── a4s_plugin_performance
-│   ├── __init__.py
-│   ├── calibration_metrics.py
-│   ├── classif_performance.py
-│   ├── iterators.py
-│   ├── regression_performance.py
-│   └── utils.py
 ├── datasets
 │   ├── classification
 │   │   ├── rf_cls_model.onnx
@@ -46,5 +39,21 @@ We report for instance the MSE (mean squared error), RMSE (root mean squared err
 │       └── training_data.csv
 ├── pyproject.toml
 ├── README.md
+├── src
+│   └── a4s_plugin_performance
+│       ├── __init__.py
+│       ├── base_performance_plugin.py
+│       ├── classification
+│       │   ├── __init__.py
+│       │   ├── calibration_metrics.py
+│       │   └── plugin.py
+│       ├── config_form.py
+│       ├── data_input_provider.py
+│       ├── iterators.py
+│       ├── model_input_provider.py
+│       ├── regression
+│       │   ├── __init__.py
+│       │   └── plugin.py
+│       └── utils.py
 └── uv.lock
 ```

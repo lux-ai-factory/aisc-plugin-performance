@@ -14,3 +14,6 @@ dependencies = [
 
 [tool.uv.sources]
 a4s-plugin-interface = { git = "https://github.com/lux-ai-factory/a4s-plugin-interface" }
+
+[dependency-groups]
+dev = []

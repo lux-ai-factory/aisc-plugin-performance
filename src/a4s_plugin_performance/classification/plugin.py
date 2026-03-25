@@ -1,13 +1,18 @@
 from functools import partial
 
 from a4s_plugin_interface import TaskProgress
-from a4s_plugin_interface.models.measure import Measure, MetricVisualization, ChartType
+from a4s_plugin_interface.models.measure import MetricVisualization, ChartType
 
-from .utils import PerformancePluginFromDatasetConfig, add_metrics, merge_dicts
+from ..utils import add_metrics, merge_dicts
+from ..base_performance_plugin import BasePerformanceEvaluationPlugin
+from ..data_input_provider import DataFrameProvider
+from ..model_input_provider import OnnxInputProvider
 
 
 @add_metrics
-class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
+class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
+    plugin_name = "Classification Performance"
+
     performance_metric_names = [
         "Accuracy",
         "Precision",
@@ -65,46 +70,7 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
 
         return metrics
 
-    def _get_y_pred_probs(self, session, x_test_np):
-        import numpy as np
-
-        # Cast to expected dtype
-        expected = session.get_inputs()[0].type  # e.g., 'tensor(double)'
-        dtype = (
-            np.float32
-            if "tensor(float)" in expected
-            else (np.float64 if "tensor(double)" in expected else x_test_np.dtype)
-        )
-        x = np.ascontiguousarray(x_test_np.astype(dtype, copy=False))
-
-        # Pick a robust probability output
-        out_candidates = session.get_outputs()
-        # Prefer a 'prob'/'probab' output if available
-        idx = next(
-            (i for i, o in enumerate(out_candidates) if "prob" in o.name.lower()), None
-        )
-        if idx is None:
-            idx = 1 if len(out_candidates) >= 2 else 0
-        label_name = out_candidates[idx].name
-
-        raw = session.run([label_name], {session.get_inputs()[0].name: x})[0]
-
-        # Handle ZipMap (list of dicts) -> array
-        if isinstance(raw, list) and raw and isinstance(raw[0], dict):
-            keys = list(raw[0].keys())
-            probs = np.array(
-                [[row.get(k, 0.0) for k in keys] for row in raw], dtype=np.float32
-            )
-            return probs
-
-        # Otherwise assume it's already a tensor
-        arr = np.array(raw)
-        if arr.ndim == 1:
-            arr = arr[:, None]
-        return arr.astype(np.float32, copy=False)
-
-    def evaluate(self, config_data: dict) -> list[Measure]:
-        from onnxruntime import InferenceSession
+    def evaluate(self, config_data: dict) -> dict[str, dict[str, list]]:
         import numpy as np
         import pandas as pd
 
@@ -124,10 +90,11 @@ class ClassificationPerformancePlugin(PerformancePluginFromDatasetConfig):
         x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
 
-        session: InferenceSession = self.get_model()
-        y_pred_proba = self._get_y_pred_probs(session, x_test_np)
+        assert isinstance(self.model_input_provider, OnnxInputProvider)
+        y_pred_proba = self.model_input_provider.predict(x_test_np, probabilities=True)
         y_pred = np.argmax(y_pred_proba, axis=1)
 
+        assert isinstance(self.dataset_input_provider, DataFrameProvider)
         dates_masks = list(
             self.dataset_input_provider.iter(date_feature, frequency, window_size)
         )
