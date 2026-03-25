@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
+
 from a4s_plugin_interface import TaskProgress
 from a4s_plugin_interface.models.measure import MetricVisualization, ChartType
 
@@ -5,6 +8,10 @@ from ..utils import add_metrics, merge_dicts
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
 from ..data_input_provider import DataFrameProvider
 from ..model_input_provider import OnnxInputProvider
+
+if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
 
 
 @add_metrics
@@ -20,14 +27,19 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
     ]
 
     @classmethod
-    def metric_names(cls):
+    def metric_names(cls) -> list[str]:
         return cls.performance_metric_names
 
     @property
     def display_icon(self) -> str:
         return "trending_up"
 
-    def _calculate_metrics(self, y_true, y_pred, date=None):
+    def _calculate_metrics(
+        self,
+        y_true: "npt.NDArray[np.floating[Any]]",
+        y_pred: "npt.NDArray[np.floating[Any]]",
+        date: datetime | None = None,
+    ) -> dict[str, dict[str, Any]]:
         from sklearn.metrics import (
             mean_absolute_error,
             root_mean_squared_error,
@@ -51,7 +63,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             )
         }
 
-    def evaluate(self, config_data: dict) -> dict[str, dict[str, list]]:
+    def evaluate(self, config_data: dict[str, Any]) -> dict[str, dict[str, list[Any]]]:
         import pandas as pd
 
         config = self.validate_config_form_data(config_data)

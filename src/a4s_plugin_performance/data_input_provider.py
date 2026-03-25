@@ -1,6 +1,8 @@
 import io
+from collections.abc import Iterator
+from datetime import datetime
+
 import pandas as pd
-from typing import Any
 
 from a4s_plugin_interface.input_providers.base_input_provider import BaseInputProvider
 
@@ -8,7 +10,7 @@ from .iterators import DateIterator
 
 
 class DataFrameProvider(BaseInputProvider):
-    def _read_data(self, file_content: bytes | list[bytes]) -> dict[str, Any]:
+    def _read_data(self, file_content: bytes | list[bytes]) -> dict[str, pd.DataFrame]:
         if isinstance(file_content, bytes):
             return {"test": self._read_single_file(file_content)}
 
@@ -17,7 +19,7 @@ class DataFrameProvider(BaseInputProvider):
             for name, f in zip(("train", "test"), file_content)
         }
 
-    def _read_single_file(self, file_content: bytes) -> Any:
+    def _read_single_file(self, file_content: bytes) -> pd.DataFrame:
         import pandas as pd
 
         file_stream = io.BytesIO(file_content)
@@ -36,7 +38,7 @@ class DataFrameProvider(BaseInputProvider):
         frequency: str | None,
         window_size: str | None,
         date_round: str | None = "1 D",
-    ):
+    ) -> Iterator[tuple[datetime | None, pd.Series]]:
         if date_feature is not None:
             self._data["test"][date_feature] = pd.to_datetime(
                 self._data["test"][date_feature]

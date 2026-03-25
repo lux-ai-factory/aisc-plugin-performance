@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pandas as pd
 
 
@@ -61,7 +63,7 @@ class DateIterator:
         freq: str | None,
         window: str | None,
         date_round: str | None = "1 D",
-    ):
+    ) -> None:
         """Initialize the DateIterator.
 
         Args:
@@ -99,11 +101,11 @@ class DateIterator:
         """Return the iterator object."""
         return self
 
-    def __next__(self) -> tuple[pd.Timestamp | None, pd.DataFrame]:
+    def __next__(self) -> tuple[datetime | None, pd.Series]:
         """Get the next batch of data.
 
         Returns:
-            pd.Series: a mask for the dataframe associated with the current batch
+            A tuple of (date, mask) where mask is a boolean Series for the current batch.
 
         Raises:
             StopIteration: When there are no more batches to process.

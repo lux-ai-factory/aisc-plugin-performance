@@ -1,10 +1,19 @@
 from enum import Enum
 from collections import defaultdict
+from typing import Any, Protocol, TypeVar
 
 from pydantic import BaseModel, Field
 
 from a4s_plugin_interface import metric
 from a4s_plugin_interface.models.measure import Measure
+
+
+class _HasMetricNames(Protocol):
+    @classmethod
+    def metric_names(cls) -> list[str]: ...
+
+
+T = TypeVar("T", bound=_HasMetricNames)
 
 
 class FeatureType(str, Enum):
@@ -21,7 +30,9 @@ class Feature(BaseModel):
     type: FeatureType = Field(...)
 
 
-def merge_dicts(dicts: list[dict]) -> dict[str, dict[str, list]]:
+def merge_dicts(
+    dicts: list[dict[str, dict[str, Any]]],
+) -> dict[str, dict[str, list[Any]]]:
     """Merge a list of dictionaries into a single dictionary.
 
     Args:
@@ -46,13 +57,15 @@ def merge_dicts(dicts: list[dict]) -> dict[str, dict[str, list]]:
     return {m: dict(vals) for m, vals in merged.items()}
 
 
-def add_metrics(cls):
-    # this a class decorator that automatically adds the @metric decorator
+def add_metrics(cls: type[T]) -> type[T]:
+    """Class decorator that automatically adds @metric decorated export methods."""
     for name in cls.metric_names():
 
         @metric(name)
-        def fct(self, evaluation_output: dict, _name=name) -> list[Measure]:
-            values: dict = evaluation_output.get(_name, {})
+        def fct(
+            self, evaluation_output: dict[str, dict[str, list[Any]]], _name: str = name
+        ) -> list[Measure]:
+            values: dict[str, list[Any]] = evaluation_output.get(_name, {})
             scores = values.get("score", [])
             dates = values.get("date", [])
 

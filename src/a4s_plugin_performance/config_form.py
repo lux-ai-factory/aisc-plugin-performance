@@ -57,7 +57,7 @@ class ConfigForm(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_special_features(self):
+    def validate_special_features(self) -> "ConfigForm":
         self.frequency = self.frequency
         self.window_size = self.window_size
         self.target_feature = self.target_feature or None

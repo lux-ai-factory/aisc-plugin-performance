@@ -16,4 +16,7 @@ dependencies = [
 a4s-plugin-interface = { git = "https://github.com/lux-ai-factory/a4s-plugin-interface" }
 
 [dependency-groups]
-dev = []
+dev = [
+    "ruff>=0.15.7",
+    "ty>=0.0.25",
+]

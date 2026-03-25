@@ -1,9 +1,16 @@
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
+
+
 def classification_calibration_score_metrics(
-    y_true,
-    y_pred_proba,
-    y_pred=None,
+    y_true: "npt.NDArray[np.integer[Any]]",
+    y_pred_proba: "npt.NDArray[np.floating[Any]]",
+    y_pred: "npt.NDArray[np.integer[Any]] | None" = None,
     n_bins: int = 10,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """
     Computes ECE, MCE, and SCE.
 
@@ -63,7 +70,16 @@ def classification_calibration_score_metrics(
     ]
 
 
-def _compute_bin_stats(confidences, accuracies, n_bins):
+def _compute_bin_stats(
+    confidences: "npt.NDArray[np.floating]",
+    accuracies: "npt.NDArray[np.floating]",
+    n_bins: int,
+) -> tuple[
+    "npt.NDArray[np.intp]",
+    "npt.NDArray[np.floating]",
+    "npt.NDArray[np.floating]",
+    "npt.NDArray[np.bool_]",
+]:
     """
     Returns per-bin counts, average confidence, average accuracy, and non-zero bins
     """
@@ -88,7 +104,13 @@ def _compute_bin_stats(confidences, accuracies, n_bins):
     return bin_counts, avg_conf, avg_acc, nonzero
 
 
-def maximum_calibration_error(bin_counts, avg_conf, avg_acc, nonzero, gap=None):
+def maximum_calibration_error(
+    bin_counts: "npt.NDArray[np.intp]",
+    avg_conf: "npt.NDArray[np.floating]",
+    avg_acc: "npt.NDArray[np.floating]",
+    nonzero: "npt.NDArray[np.bool_]",
+    gap: "npt.NDArray[np.floating] | None" = None,
+) -> float:
     """
     Maximum Calibration Error (MCE)
     https://ojs.aaai.org/index.php/AAAI/article/view/9602
@@ -102,8 +124,13 @@ def maximum_calibration_error(bin_counts, avg_conf, avg_acc, nonzero, gap=None):
 
 
 def expected_calibration_error(
-    bin_counts, avg_conf, avg_acc, nonzero, n_samples, gap=None
-):
+    bin_counts: "npt.NDArray[np.intp]",
+    avg_conf: "npt.NDArray[np.floating]",
+    avg_acc: "npt.NDArray[np.floating]",
+    nonzero: "npt.NDArray[np.bool_]",
+    n_samples: int,
+    gap: "npt.NDArray[np.floating] | None" = None,
+) -> float:
     """
     Expected Calibration Error (ECE)
     https://ojs.aaai.org/index.php/AAAI/article/view/9602
@@ -116,7 +143,11 @@ def expected_calibration_error(
     return float(np.sum((bin_counts[nonzero] / n_samples) * gap[nonzero]))
 
 
-def static_calibration_error(y_true, y_pred_proba, n_bins):
+def static_calibration_error(
+    y_true: "npt.NDArray[np.integer[Any]]",
+    y_pred_proba: "npt.NDArray[np.floating[Any]]",
+    n_bins: int,
+) -> float:
     """
     Static Calibration Error (SCE)
     https://arxiv.org/abs/1904.01685

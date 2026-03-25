@@ -1,7 +1,6 @@
 from abc import abstractmethod
 from typing import Any
 
-from a4s_plugin_interface.input_providers.base_input_provider import BaseInputProvider
 from a4s_plugin_interface.base_evaluation_plugin import (
     BaseEvaluationPlugin,
     PluginFeatureFlags,
@@ -20,7 +19,7 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
     def feature_flags(self) -> PluginFeatureFlags:
         return PluginFeatureFlags(can_parse_config_from_dataset=True)
 
-    def parse_config_from_dataset(self) -> dict | None:
+    def parse_config_from_dataset(self) -> dict[str, Any] | None:
         import pandas as pd
 
         config: ConfigForm = ConfigForm(
@@ -75,8 +74,8 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
         return config.model_dump()
 
     def on_config_change(
-        self, form_data: dict | None
-    ) -> tuple[dict | None, dict, dict]:
+        self, form_data: ConfigForm | None
+    ) -> tuple[ConfigForm | None, dict[str, Any], dict[str, Any]]:
         config_schema, ui_schema = self.get_full_schema()
 
         if form_data is None:
@@ -84,13 +83,18 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
             ui_schema["target_feature"] = {"ui:widget": "hidden"}
             return None, config_schema, ui_schema
 
+        # Convert to dict for property access if needed
+        form_dict = (
+            form_data.model_dump() if isinstance(form_data, ConfigForm) else form_data
+        )
+
         if (
             "properties" in config_schema
             and "date_feature" in config_schema["properties"]
         ):
             possible_date_features = [
                 f["name"]
-                for f in form_data.get("features", [])
+                for f in form_dict.get("features", [])
                 if f["type"] in (FeatureType.DATE, FeatureType.CATEGORICAL)
             ]
             if possible_date_features:
@@ -112,7 +116,7 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
         ):
             possible_target_features = [
                 f["name"]
-                for f in form_data.get("features", [])
+                for f in form_dict.get("features", [])
                 if f["type"]
                 in (FeatureType.INTEGER, FeatureType.FLOAT, FeatureType.CATEGORICAL)
             ]
@@ -136,13 +140,13 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
     def set_dataset_input_provider(
         self, file_content: bytes | list[bytes] | None
     ) -> DataFrameProvider:
-        self.dataset_input_provider = DataFrameProvider(file_content)
+        self.dataset_input_provider = DataFrameProvider(file_content)  # ty: ignore[invalid-argument-type]
         return self.dataset_input_provider
 
-    def set_model_input_provider(self, file_content: bytes | None) -> BaseInputProvider:
-        self.model_input_provider = OnnxInputProvider(file_content)
+    def set_model_input_provider(self, file_content: bytes | None) -> OnnxInputProvider:
+        self.model_input_provider = OnnxInputProvider(file_content)  # ty: ignore[invalid-argument-type]
         return self.model_input_provider
 
     @abstractmethod
-    def evaluate(self, config_data: dict) -> Any:
+    def evaluate(self, config_data: dict[str, Any]) -> dict[str, dict[str, list[Any]]]:
         raise NotImplementedError

@@ -1,4 +1,6 @@
+from datetime import datetime
 from functools import partial
+from typing import TYPE_CHECKING, Any
 
 from a4s_plugin_interface import TaskProgress
 from a4s_plugin_interface.models.measure import MetricVisualization, ChartType
@@ -7,6 +9,10 @@ from ..utils import add_metrics, merge_dicts
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
 from ..data_input_provider import DataFrameProvider
 from ..model_input_provider import OnnxInputProvider
+
+if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
 
 
 @add_metrics
@@ -29,14 +35,20 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
     ]
 
     @classmethod
-    def metric_names(cls):
+    def metric_names(cls) -> list[str]:
         return cls.performance_metric_names + cls.calibration_metric_names
 
     @property
     def display_icon(self) -> str:
         return "category"
 
-    def _calculate_metrics(self, y_true, y_pred_proba, y_pred, date=None):
+    def _calculate_metrics(
+        self,
+        y_true: "npt.NDArray[np.integer[Any]]",
+        y_pred_proba: "npt.NDArray[np.floating[Any]]",
+        y_pred: "npt.NDArray[np.integer[Any]]",
+        date: datetime | None = None,
+    ) -> dict[str, dict[str, Any]]:
         from sklearn.metrics import (
             accuracy_score,
             precision_score,
@@ -70,7 +82,7 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
 
         return metrics
 
-    def evaluate(self, config_data: dict) -> dict[str, dict[str, list]]:
+    def evaluate(self, config_data: dict[str, Any]) -> dict[str, dict[str, list[Any]]]:
         import numpy as np
         import pandas as pd
 

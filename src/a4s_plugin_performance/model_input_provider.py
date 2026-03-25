@@ -1,21 +1,33 @@
+from typing import TYPE_CHECKING, Any
+
 from a4s_plugin_interface.input_providers.base_input_provider import BaseInputProvider
+
+if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
+    import pandas as pd
+    from onnxruntime import InferenceSession
 
 
 class OnnxInputProvider(BaseInputProvider):
-    def _read_data(self, file_content: bytes):
+    def _read_data(self, file_content: bytes) -> "InferenceSession":
         from onnxruntime import InferenceSession
 
         session: InferenceSession = InferenceSession(file_content)
         return session
 
-    def predict(self, x_test, probabilities=False):
+    def predict(
+        self, x_test: "npt.ArrayLike | pd.DataFrame", probabilities: bool = False
+    ) -> "npt.NDArray[np.float32]":
         import pandas as pd
         import numpy as np
 
+        x_arr: "npt.NDArray[Any]"
         if isinstance(x_test, pd.DataFrame):
-            x_test = x_test.to_numpy()
-
-        if not isinstance(x_test, np.ndarray):
+            x_arr = x_test.to_numpy()
+        elif isinstance(x_test, np.ndarray):
+            x_arr = x_test
+        else:
             raise ValueError(f"x_test should be np.ndarray, found: {type(x_test)}")
 
         if self._data is None:
@@ -27,13 +39,15 @@ class OnnxInputProvider(BaseInputProvider):
 
         # determine expected dtype
         expected = session.get_inputs()[0].type
-        dtype = (
-            np.float32
-            if "tensor(float)" in expected
-            else (np.float64 if "tensor(double)" in expected else x_test.dtype)
-        )
+        target_dtype: npt.DTypeLike
+        if "tensor(float)" in expected:
+            target_dtype = np.float32
+        elif "tensor(double)" in expected:
+            target_dtype = np.float64
+        else:
+            target_dtype = np.float32  # default fallback
 
-        x = np.ascontiguousarray(x_test.astype(dtype, copy=False))
+        x = np.ascontiguousarray(x_arr.astype(target_dtype))  # ty: ignore[no-matching-overload]
         if x.ndim == 1:
             x = x.reshape(1, -1)
 
@@ -70,4 +84,4 @@ class OnnxInputProvider(BaseInputProvider):
         if not probabilities:
             arr = arr.squeeze(-1)
 
-        return arr.astype(np.float32, copy=False)
+        return arr.astype(np.float32)
