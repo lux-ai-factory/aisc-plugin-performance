@@ -38,7 +38,7 @@ class ConfigForm(BaseModel):
     frequency: str = Field(
         default="",
         title="Frequency",
-        description="Data frequency for time-series analysis (e.g., '30D', '1M')",
+        description="Data frequency of batch starts for time-series analysis (e.g., '30D', '1M')",
         examples=["30D", "1M", "7D"],
     )
 

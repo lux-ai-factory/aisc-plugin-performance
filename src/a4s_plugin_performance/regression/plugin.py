@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 from a4s_plugin_interface import TaskProgress
 from a4s_plugin_interface.models.measure import MetricVisualization, ChartType
 
-from ..utils import add_metrics, merge_dicts
+from ..utils import add_metrics, group_metrics
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
 from ..data_input_provider import DataFrameProvider
 from ..model_input_provider import OnnxInputProvider
@@ -123,7 +123,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             )
 
         self.logger.info("Regression evaluation completed")
-        return merge_dicts(results)
+        return group_metrics(results)
 
     def get_metric_visualizations(self, config_data: dict) -> list[MetricVisualization]:
         config = self.validate_config_form_data(config_data)

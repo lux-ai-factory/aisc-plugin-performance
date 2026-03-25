@@ -3,7 +3,7 @@
 from a4s_plugin_performance.utils import (
     Feature,
     FeatureType,
-    merge_dicts,
+    group_metrics,
 )
 
 
@@ -34,38 +34,37 @@ class TestFeature:
     def test_feature_model_dump(self):
         feature = Feature(name="age", min=18.0, max=65.0, type=FeatureType.INTEGER)
         dump = feature.model_dump()
-        assert dump == {
-            "name": "age",
-            "min": 18.0,
-            "max": 65.0,
-            "type": FeatureType.INTEGER,
-        }
+        assert dump["name"] == "age"
+        assert dump["min"] == 18.0
+        assert dump["max"] == 65.0
+        assert dump["type"] == FeatureType.INTEGER
+        assert "pid" in dump
 
 
-class TestMergeDicts:
-    """Tests for merge_dicts function."""
+class TestGroupMetrics:
+    """Tests for group_metrics function."""
 
-    def test_merge_single_dict(self):
+    def test_group_single_dict(self):
         dicts = [{"a": {"x": 1, "y": 2}}]
-        result = merge_dicts(dicts)
+        result = group_metrics(dicts)
         assert result == {"a": {"x": [1], "y": [2]}}
 
-    def test_merge_multiple_dicts(self):
+    def test_group_multiple_dicts(self):
         dicts = [{"a": {"x": 1}}, {"a": {"x": 2, "y": 3}, "b": {"z": 4}}]
-        result = merge_dicts(dicts)
+        result = group_metrics(dicts)
         assert result == {"a": {"x": [1, 2], "y": [3]}, "b": {"z": [4]}}
 
-    def test_merge_empty_list(self):
-        result = merge_dicts([])
+    def test_group_empty_list(self):
+        result = group_metrics([])
         assert result == {}
 
-    def test_merge_with_different_keys(self):
+    def test_group_with_different_keys(self):
         dicts = [
             {"metric1": {"score": 0.9, "date": "2024-01-01"}},
             {"metric1": {"score": 0.85, "date": "2024-01-02"}},
             {"metric2": {"score": 0.7, "date": "2024-01-01"}},
         ]
-        result = merge_dicts(dicts)
+        result = group_metrics(dicts)
         assert result["metric1"]["score"] == [0.9, 0.85]
         assert result["metric1"]["date"] == ["2024-01-01", "2024-01-02"]
         assert result["metric2"]["score"] == [0.7]

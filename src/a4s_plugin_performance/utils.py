@@ -1,8 +1,9 @@
+import uuid
 from enum import Enum
 from collections import defaultdict
 from typing import Any, Protocol, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 from a4s_plugin_interface import metric
 from a4s_plugin_interface.models.measure import Measure
@@ -24,26 +25,31 @@ class FeatureType(str, Enum):
 
 
 class Feature(BaseModel):
+    pid: uuid.UUID = Field(default_factory=uuid.uuid4)
     name: str = Field(...)
     min: float = Field(...)
     max: float = Field(...)
     type: FeatureType = Field(...)
 
+    @field_serializer("pid")
+    def serialize_pid(self, pid: uuid.UUID | None) -> str | None:
+        return str(pid) if pid is not None else None
 
-def merge_dicts(
+
+def group_metrics(
     dicts: list[dict[str, dict[str, Any]]],
 ) -> dict[str, dict[str, list[Any]]]:
-    """Merge a list of dictionaries into a single dictionary.
+    """Group a list of metric dictionaries by metric name into a single dictionary.
 
     Args:
-        dicts (list[dict]): A list of dictionaries to merge.
+        dicts (list[dict]): A list of dictionaries to group.
 
     Returns:
-        dict: A merged dictionary with consolidated values.
+        dict: A grouped dictionary with consolidated values.
 
     Example:
         >>> dicts = [{"a": {"x": 1}}, {"a": {"x": 2, "y": 3}, "b": {"z": 4}}]
-        >>> result = merge_dicts(dicts)
+        >>> result = group_metrics(dicts)
         >>> print(result)
         {'a': {'x': [1, 2], 'y': [3]}, 'b': {'z': [4]}}
     """
