@@ -16,8 +16,21 @@ from .model_input_provider import OnnxInputProvider
 class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
     """Base class for performance evaluation plugins."""
 
-    # Declared here for type checking; actual logger is provided by BaseEvaluationPlugin
-    logger: logging.Logger
+    _logger: logging.Logger | None = None
+
+    @property
+    def logger(self) -> logging.Logger:
+        """Return logger from parent class, or create a fallback if not available."""
+        if hasattr(super(), "logger"):
+            return super().logger  # ty: ignore[unresolved-attribute]
+        if self._logger is None:
+            self._logger = logging.getLogger(self.__class__.__name__)
+        return self._logger
+
+    @logger.setter
+    def logger(self, value: logging.Logger) -> None:
+        """Allow setting the logger (useful for testing)."""
+        self._logger = value
 
     form_ui_schema = FORM_UI_SCHEMA
 
