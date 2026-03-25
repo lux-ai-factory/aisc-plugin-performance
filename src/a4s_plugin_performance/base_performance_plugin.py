@@ -1,3 +1,4 @@
+import logging
 from abc import abstractmethod
 from typing import Any
 
@@ -13,6 +14,11 @@ from .model_input_provider import OnnxInputProvider
 
 
 class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
+    """Base class for performance evaluation plugins."""
+
+    # Declared here for type checking; actual logger is provided by BaseEvaluationPlugin
+    logger: logging.Logger
+
     form_ui_schema = FORM_UI_SCHEMA
 
     @property
@@ -21,6 +27,8 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
 
     def parse_config_from_dataset(self) -> dict[str, Any] | None:
         import pandas as pd
+
+        self.logger.info("Parsing config from dataset")
 
         config: ConfigForm = ConfigForm(
             frequency="",
@@ -31,6 +39,9 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
         )
 
         df: pd.DataFrame = self.get_dataset()["test"]
+        self.logger.debug(
+            "Dataset loaded with %d rows and %d columns", len(df), len(df.columns)
+        )
 
         for col_name in df.columns:
             col_data = df[col_name]
@@ -43,10 +54,9 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
             elif pd.api.types.is_object_dtype(col_data):
                 temp = pd.to_datetime(col_data, errors="coerce")
                 if temp.isna().any():
-                    print()
-                    # self.logger.warning(
-                    #     f"Attempted to parse {col_name} as a date, but failed."
-                    # )
+                    self.logger.warning(
+                        "Attempted to parse '%s' as a date, but failed", col_name
+                    )
                 else:
                     feature_type = FeatureType.DATE
 
@@ -70,7 +80,15 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
                 name=col_name, min=col_min, max=col_max, type=feature_type
             )
             config.features.append(feature)
+            self.logger.debug(
+                "Detected feature '%s' as %s (min=%.2f, max=%.2f)",
+                col_name,
+                feature_type,
+                col_min,
+                col_max,
+            )
 
+        self.logger.info("Parsed %d features from dataset", len(config.features))
         return config.model_dump()
 
     def on_config_change(
@@ -140,10 +158,12 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
     def set_dataset_input_provider(
         self, file_content: bytes | list[bytes] | None
     ) -> DataFrameProvider:
+        self.logger.debug("Setting dataset input provider")
         self.dataset_input_provider = DataFrameProvider(file_content)  # ty: ignore[invalid-argument-type]
         return self.dataset_input_provider
 
     def set_model_input_provider(self, file_content: bytes | None) -> OnnxInputProvider:
+        self.logger.debug("Setting model input provider (ONNX)")
         self.model_input_provider = OnnxInputProvider(file_content)  # ty: ignore[invalid-argument-type]
         return self.model_input_provider
 

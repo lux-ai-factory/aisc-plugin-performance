@@ -66,6 +66,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
     def evaluate(self, config_data: dict[str, Any]) -> dict[str, dict[str, list[Any]]]:
         import pandas as pd
 
+        self.logger.info("Starting regression evaluation")
         config = self.validate_config_form_data(config_data)
 
         target_col = config.target_feature
@@ -77,22 +78,43 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         columns_features = [
             f.name for f in config.features if f.name not in (target_col, date_feature)
         ]
+        self.logger.debug(
+            "Config: target=%s, date_feature=%s, frequency=%s, window=%s, features=%d",
+            target_col,
+            date_feature,
+            frequency,
+            window_size,
+            len(columns_features),
+        )
 
         df_test: pd.DataFrame = self.get_dataset()["test"]
         x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
+        self.logger.debug(
+            "Test data shape: %s, target shape: %s", x_test_np.shape, y_true.shape
+        )
 
         assert isinstance(self.model_input_provider, OnnxInputProvider)
+        self.logger.debug("Running model predictions")
         y_pred = self.model_input_provider.predict(x_test_np, probabilities=False)
+        self.logger.debug("Predictions shape: %s", y_pred.shape)
 
         assert isinstance(self.dataset_input_provider, DataFrameProvider)
         dates_masks = list(
             self.dataset_input_provider.iter(date_feature, frequency, window_size)
         )
         iterations = len(dates_masks)
+        self.logger.info("Processing %d time windows", iterations)
 
         results = []
         for i, (date, mask) in enumerate(dates_masks, start=1):
+            self.logger.debug(
+                "Processing window %d/%d (date=%s, samples=%d)",
+                i,
+                iterations,
+                date,
+                mask.sum(),
+            )
             results.append(
                 self._calculate_metrics(y_true[mask], y_pred[mask], date=date)
             )
@@ -100,6 +122,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
                 TaskProgress(progress=i / iterations, extra={"iteration": i})
             )
 
+        self.logger.info("Regression evaluation completed")
         return merge_dicts(results)
 
     def get_metric_visualizations(self, config_data: dict) -> list[MetricVisualization]:
