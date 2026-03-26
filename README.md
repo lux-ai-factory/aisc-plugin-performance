@@ -173,3 +173,19 @@ datasets/
 - **uv** - Package management
 - **Ruff** - Linting and formatting
 - **ty** - Type checking
+
+## Plugin Metadata
+
+| Field | Value |
+|-------|-------|
+| Name | A4S Performance Plugin |
+| Description | A Python plugin for ML model performance evaluation, implementing classification metrics (Accuracy, Precision, Recall, F1-Score, MCC, Confusion Matrix), calibration metrics (ECE, MCE, SCE), and regression metrics (MAE, MSE, RMSE, R2, Explained Variance). Supports time-windowed evaluation and ONNX model inference. |
+| License | [MIT] |
+| Verification type | Technical test |
+| Project | [a4s-plugin-performance](https://github.com/lux-ai-factory/a4s-plugin-performance) |
+| Branch | main |
+| Version | 0.1.1 |
+| Project maturity | Deployed |
+| Scientific reference | — |
+| Verification targets | [Model Performance] [Classification Metrics] [Regression Metrics] [Calibration Analysis] |
+| Sector | [AI/ML] [Data Science] [MLOps] |
