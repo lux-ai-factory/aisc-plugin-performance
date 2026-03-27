@@ -23,7 +23,7 @@ dependencies = [
 
 [[package]]
 name = "a4s-plugin-performance"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "a4s-plugin-interface" },

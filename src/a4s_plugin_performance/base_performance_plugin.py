@@ -51,7 +51,16 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
             target_feature=None,
         )
 
-        df: pd.DataFrame = self.get_dataset()["test"]
+        try:
+            df: pd.DataFrame = self.get_dataset()["test"]
+        except Exception:
+            self.logger.exception("Failed to load dataset for config parsing")
+            raise
+
+        if df.empty:
+            self.logger.warning("Dataset is empty, returning default config")
+            return config.model_dump()
+
         self.logger.debug(
             "Dataset loaded with %d rows and %d columns", len(df), len(df.columns)
         )
@@ -172,16 +181,34 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
         self, file_content: bytes | list[bytes] | None
     ) -> DataFrameProvider:
         self.logger.debug("Setting dataset input provider")
-        self.dataset_input_provider = DataFrameProvider(
-            file_content  # ty: ignore[invalid-argument-type]
-        )
+
+        if file_content is None:
+            self.logger.critical("Dataset file content is None")
+
+        try:
+            self.dataset_input_provider = DataFrameProvider(
+                file_content  # ty: ignore[invalid-argument-type]
+            )
+        except Exception:
+            self.logger.exception("Failed to initialize dataset input provider")
+            raise
+
         return self.dataset_input_provider
 
     def set_model_input_provider(self, file_content: bytes | None) -> OnnxInputProvider:
         self.logger.debug("Setting model input provider (ONNX)")
-        self.model_input_provider = OnnxInputProvider(
-            file_content  # ty: ignore[invalid-argument-type]
-        )
+
+        if file_content is None:
+            self.logger.critical("Model file content is None")
+
+        try:
+            self.model_input_provider = OnnxInputProvider(
+                file_content  # ty: ignore[invalid-argument-type]
+            )
+        except Exception:
+            self.logger.exception("Failed to initialize ONNX model input provider")
+            raise
+
         return self.model_input_provider
 
     @abstractmethod

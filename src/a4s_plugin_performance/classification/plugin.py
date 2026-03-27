@@ -98,6 +98,12 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         columns_features = [
             f.name for f in config.features if f.name not in (target_col, date_feature)
         ]
+
+        if not columns_features:
+            self.logger.warning(
+                "No input features found after excluding target and date"
+            )
+
         self.logger.debug(
             "Config: target=%s, date_feature=%s, frequency=%s, window=%s, features=%d",
             target_col,
@@ -116,7 +122,17 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
 
         assert isinstance(self.model_input_provider, OnnxInputProvider)
         self.logger.debug("Running model predictions")
-        y_pred_proba = self.model_input_provider.predict(x_test_np, probabilities=True)
+
+        try:
+            y_pred_proba = self.model_input_provider.predict(
+                x_test_np, probabilities=True
+            )
+        except Exception:
+            self.logger.exception(
+                "Model prediction failed for input shape %s", x_test_np.shape
+            )
+            raise
+
         y_pred = np.argmax(y_pred_proba, axis=1)
         self.logger.debug(
             "Predictions shape: %s, probabilities shape: %s",
@@ -133,6 +149,15 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
 
         results = []
         for i, (date, mask) in enumerate(dates_masks, start=1):
+            if mask.sum() == 0:
+                self.logger.warning(
+                    "Window %d/%d (date=%s) has no samples, skipping",
+                    i,
+                    iterations,
+                    date,
+                )
+                continue
+
             self.logger.debug(
                 "Processing window %d/%d (date=%s, samples=%d)",
                 i,
@@ -140,11 +165,22 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
                 date,
                 mask.sum(),
             )
-            results.append(
-                self._calculate_metrics(
-                    y_true[mask], y_pred_proba[mask], y_pred[mask], date=date
+
+            try:
+                results.append(
+                    self._calculate_metrics(
+                        y_true[mask], y_pred_proba[mask], y_pred[mask], date=date
+                    )
                 )
-            )
+            except Exception:
+                self.logger.exception(
+                    "Metric calculation failed for window %d/%d (date=%s)",
+                    i,
+                    iterations,
+                    date,
+                )
+                raise
+
             self.report_progress(
                 TaskProgress(progress=i / iterations, extra={"iteration": i})
             )
