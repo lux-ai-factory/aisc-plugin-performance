@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from enum import Enum
 from collections import defaultdict
 from typing import Any, Protocol, TypeVar
@@ -49,18 +50,17 @@ def group_metrics(
 
     Example:
         >>> dicts = [{"a": {"x": 1}}, {"a": {"x": 2, "y": 3}, "b": {"z": 4}}]
-        >>> result = group_metrics(dicts)
+        >>> result = merge_metrics(dicts)
         >>> print(result)
-        {'a': {'x': [1, 2], 'y': [3]}, 'b': {'z': [4]}}
+        {'a': [{'x': 1}, {'x': 2, 'y': 3}], 'b': [{'z': 4}]}
     """
-    merged = defaultdict(lambda: defaultdict(list))
+    grouped = defaultdict(list)
 
-    for d in dicts:
-        for key, values in d.items():
-            for k, v in values.items():
-                merged[key][k].append(v)
+    for item in dicts:
+        for key, value in item.items():
+            grouped[key].append(value)
 
-    return {m: dict(vals) for m, vals in merged.items()}
+    return dict(grouped)
 
 
 def add_metrics(cls: type[T]) -> type[T]:
@@ -68,38 +68,19 @@ def add_metrics(cls: type[T]) -> type[T]:
     for name in cls.metric_names():
 
         @metric(name)
-        def fct(
-            self, evaluation_output: dict[str, dict[str, list[Any]]], _name: str = name
-        ) -> list[Measure]:
-            values: dict[str, list[Any]] = evaluation_output.get(_name, {})
-            scores = values.get("score", [])
-            dates = values.get("date", [])
+        def fct(self, evaluation_output: dict, _name=name) -> list[Measure]:
+            measures: list[dict] = evaluation_output.get(_name, [])
 
-            if len(scores) == 0:
-                return []
-
-            if isinstance(scores[0], (int, float)):
-                return [
-                    Measure(
-                        name=_name,
-                        score=float(score),
-                        **({"time": date} if date is not None else {}),
-                    )
-                    for (score, date) in zip(scores, dates)
-                ]
-            else:
-                max_i, max_j = scores[0].shape
-                return [
-                    Measure(
-                        name=_name,
-                        score=float(score[i][j]),
-                        description=f"({i + 1},{j + 1})/({max_i},{max_j})",
-                        **({"time": date} if date is not None else {}),
-                    )
-                    for (score, date) in zip(scores, dates)
-                    for i in range(max_i)
-                    for j in range(max_j)
-                ]
+            return [
+                Measure(
+                    name=_name,
+                    score=float(score),
+                    time=measure.get("time", datetime.now()),
+                    description=measure.get("description"),
+                )
+                for measure in measures
+                if (score := measure["score"]) is not None
+            ]
 
         setattr(cls, f"export_metric_{name}", fct)
 

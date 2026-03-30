@@ -9,16 +9,7 @@ from .iterators import DateIterator
 
 
 class DataFrameProvider(BaseInputProvider):
-    def _read_data(self, file_content: bytes | list[bytes]) -> dict[str, pd.DataFrame]:
-        if isinstance(file_content, bytes):
-            return {"test": self._read_single_file(file_content)}
-
-        return {
-            name: self._read_single_file(f)
-            for name, f in zip(("train", "test"), file_content)
-        }
-
-    def _read_single_file(self, file_content: bytes) -> pd.DataFrame:
+    def _read_data(self, file_content: bytes) -> pd.DataFrame:
         import pandas as pd
 
         file_stream = io.BytesIO(file_content)
@@ -39,10 +30,8 @@ class DataFrameProvider(BaseInputProvider):
         date_round: str | None = "1 D",
     ) -> Iterator[tuple[datetime | None, pd.Series]]:
         if date_feature is not None:
-            self._data["test"][date_feature] = pd.to_datetime(
-                self._data["test"][date_feature]
-            )
+            self._data[date_feature] = pd.to_datetime(self._data[date_feature])
 
         yield from DateIterator(
-            self._data["test"], date_feature, frequency, window_size, date_round
+            self._data, date_feature, frequency, window_size, date_round
         )

@@ -48,7 +48,7 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         y_pred_proba: "npt.NDArray[np.floating[Any]]",
         y_pred: "npt.NDArray[np.integer[Any]]",
         date: datetime | None = None,
-    ) -> dict[str, dict[str, Any]]:
+    ) -> list[dict[str, dict[str, Any]]]:
         from sklearn.metrics import (
             accuracy_score,
             precision_score,
@@ -64,21 +64,47 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
             partial(precision_score, zero_division=0),
             partial(recall_score, zero_division=0),
             partial(f1_score, zero_division=0),
-            confusion_matrix,
-            lambda y_true, y_pred: (matthews_corrcoef(y_true, y_pred) + 1) / 2,
         ]
 
-        metrics = {
-            name: {"score": fct(y_true, y_pred), "date": date}
+        metrics = [
+            {name: {"score": fct(y_true, y_pred), "time": date}}
             for name, fct in zip(
                 self.performance_metric_names, performance_metric_functions
             )
-        }
+        ]
+
+        # Confusion matrix
+        conf_matrix = confusion_matrix(y_true, y_pred)
+        max_i, max_j = conf_matrix.shape
+
+        metrics.extend(
+            {
+                self.performance_metric_names[-2]: {
+                    "score": float(conf_matrix[i][j]),
+                    "time": date,
+                    "description": f"({i + 1},{j + 1})/({max_i},{max_j})",
+                }
+            }
+            for i in range(max_i)
+            for j in range(max_j)
+        )
+
+        # MCC
+        metrics.append(
+            {
+                self.performance_metric_names[-1]: {
+                    "score": (matthews_corrcoef(y_true, y_pred) + 1) / 2,
+                    "time": date,
+                }
+            }
+        )
+
+        # Calibration
         calibration_dicts = classification_calibration_score_metrics(
             y_true, y_pred_proba, y_pred
         )
         for d in calibration_dicts:
-            metrics[d["name"]] = {"score": d["score"], "date": date}
+            metrics.append({d["name"]: {"score": d["score"], "time": date}})
 
         return metrics
 
@@ -113,20 +139,25 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
             len(columns_features),
         )
 
-        df_test: pd.DataFrame = self.get_dataset()["test"]
+        try:
+            df_test = self.get_input_data("test-dataset")
+        except Exception:
+            self.logger.exception("Failed to load test dataset")
+            raise
+
+        assert isinstance(df_test, pd.DataFrame)
         x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
         self.logger.debug(
             "Test data shape: %s, target shape: %s", x_test_np.shape, y_true.shape
         )
 
-        assert isinstance(self.model_input_provider, OnnxInputProvider)
+        model_provider = self._input_provider_instances.get("model")
+        assert isinstance(model_provider, OnnxInputProvider)
         self.logger.debug("Running model predictions")
 
         try:
-            y_pred_proba = self.model_input_provider.predict(
-                x_test_np, probabilities=True
-            )
+            y_pred_proba = model_provider.predict(x_test_np, probabilities=True)
         except Exception:
             self.logger.exception(
                 "Model prediction failed for input shape %s", x_test_np.shape
@@ -140,10 +171,9 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
             y_pred_proba.shape,
         )
 
-        assert isinstance(self.dataset_input_provider, DataFrameProvider)
-        dates_masks = list(
-            self.dataset_input_provider.iter(date_feature, frequency, window_size)
-        )
+        dataset_provider = self._input_provider_instances.get("test-dataset")
+        assert isinstance(dataset_provider, DataFrameProvider)
+        dates_masks = list(dataset_provider.iter(date_feature, frequency, window_size))
         iterations = len(dates_masks)
         self.logger.info("Processing %d time windows", iterations)
 
@@ -167,7 +197,7 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
             )
 
             try:
-                results.append(
+                results.extend(
                     self._calculate_metrics(
                         y_true[mask], y_pred_proba[mask], y_pred[mask], date=date
                     )

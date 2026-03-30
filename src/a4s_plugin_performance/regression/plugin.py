@@ -93,18 +93,25 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             len(columns_features),
         )
 
-        df_test: pd.DataFrame = self.get_dataset()["test"]
+        try:
+            df_test = self.get_input_data("test-dataset")
+        except Exception:
+            self.logger.exception("Failed to load test dataset")
+            raise
+
+        assert isinstance(df_test, pd.DataFrame)
         x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
         self.logger.debug(
             "Test data shape: %s, target shape: %s", x_test_np.shape, y_true.shape
         )
 
-        assert isinstance(self.model_input_provider, OnnxInputProvider)
+        model_provider = self._input_provider_instances.get("model")
+        assert isinstance(model_provider, OnnxInputProvider)
         self.logger.debug("Running model predictions")
 
         try:
-            y_pred = self.model_input_provider.predict(x_test_np, probabilities=False)
+            y_pred = model_provider.predict(x_test_np, probabilities=False)
         except Exception:
             self.logger.exception(
                 "Model prediction failed for input shape %s", x_test_np.shape
@@ -113,10 +120,9 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
 
         self.logger.debug("Predictions shape: %s", y_pred.shape)
 
-        assert isinstance(self.dataset_input_provider, DataFrameProvider)
-        dates_masks = list(
-            self.dataset_input_provider.iter(date_feature, frequency, window_size)
-        )
+        dataset_provider = self._input_provider_instances.get("test-dataset")
+        assert isinstance(dataset_provider, DataFrameProvider)
+        dates_masks = list(dataset_provider.iter(date_feature, frequency, window_size))
         iterations = len(dates_masks)
         self.logger.info("Processing %d time windows", iterations)
 

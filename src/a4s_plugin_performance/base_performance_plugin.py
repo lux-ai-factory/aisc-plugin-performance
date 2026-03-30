@@ -1,7 +1,9 @@
-import logging
+import copy
 from abc import abstractmethod
 from typing import Any
 
+from a4s_plugin_interface import InputType
+from a4s_plugin_interface.decorators.evaluation_input import evaluation_input
 from a4s_plugin_interface.base_evaluation_plugin import (
     BaseEvaluationPlugin,
     PluginFeatureFlags,
@@ -13,26 +15,20 @@ from .data_input_provider import DataFrameProvider
 from .model_input_provider import OnnxInputProvider
 
 
+@evaluation_input(
+    name="model",
+    label="Model",
+    input_provider_class=OnnxInputProvider,
+    input_type=InputType.MODEL,
+)
+@evaluation_input(
+    name="test-dataset",
+    label="Test Dataset",
+    input_provider_class=DataFrameProvider,
+    input_type=InputType.DATASET,
+)
 class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
     """Base class for performance evaluation plugins."""
-
-    _logger: logging.Logger | None = None
-
-    @property
-    def logger(self) -> logging.Logger:
-        """Return logger from parent class, or create a fallback if not available."""
-        if (parent_logger := getattr(super(), "logger", None)) is not None:
-            return parent_logger
-
-        if self._logger is None:
-            self._logger = logging.getLogger(f"a4s_eval.{self.__class__.__name__}")
-
-        return self._logger
-
-    @logger.setter
-    def logger(self, value: logging.Logger) -> None:
-        """Allow setting the logger (useful for testing)."""
-        self._logger = value
 
     form_ui_schema = FORM_UI_SCHEMA
 
@@ -40,21 +36,23 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
     def feature_flags(self) -> PluginFeatureFlags:
         return PluginFeatureFlags(can_parse_config_from_dataset=True)
 
-    def parse_config_from_dataset(self) -> dict[str, Any] | None:
+    def parse_config_from_dataset(self, file_content: bytes) -> dict | None:
         import pandas as pd
 
         self.logger.info("Parsing config from dataset")
 
         config: ConfigForm = ConfigForm(
+            target_feature=None,
+            date_feature=None,
             frequency="",
             window_size="",
             features=[],
-            date_feature=None,
-            target_feature=None,
         )
 
         try:
-            df: pd.DataFrame = self.get_dataset()["test"]
+            input_provider = DataFrameProvider(file_content)
+            input_provider.get_data()
+            df: pd.DataFrame = input_provider.get_data()
         except Exception:
             self.logger.exception("Failed to load dataset for config parsing")
             raise
@@ -119,6 +117,7 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
         self, form_data: ConfigForm | None
     ) -> tuple[ConfigForm | None, dict[str, Any], dict[str, Any]]:
         config_schema, ui_schema = self.get_full_schema()
+        ui_schema = copy.deepcopy(ui_schema)
 
         if form_data is None:
             ui_schema["date_feature"] = {"ui:widget": "hidden"}
@@ -178,40 +177,6 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
                 ui_schema["target_feature"] = {"ui:widget": "hidden"}
 
         return form_data, config_schema, ui_schema
-
-    def set_dataset_input_provider(
-        self, file_content: bytes | list[bytes] | None
-    ) -> DataFrameProvider:
-        self.logger.debug("Setting dataset input provider")
-
-        if file_content is None:
-            self.logger.critical("Dataset file content is None")
-
-        try:
-            self.dataset_input_provider = DataFrameProvider(
-                file_content  # ty: ignore[invalid-argument-type]
-            )
-        except Exception:
-            self.logger.exception("Failed to initialize dataset input provider")
-            raise
-
-        return self.dataset_input_provider
-
-    def set_model_input_provider(self, file_content: bytes | None) -> OnnxInputProvider:
-        self.logger.debug("Setting model input provider (ONNX)")
-
-        if file_content is None:
-            self.logger.critical("Model file content is None")
-
-        try:
-            self.model_input_provider = OnnxInputProvider(
-                file_content  # ty: ignore[invalid-argument-type]
-            )
-        except Exception:
-            self.logger.exception("Failed to initialize ONNX model input provider")
-            raise
-
-        return self.model_input_provider
 
     @abstractmethod
     def evaluate(self, config_data: dict[str, Any]) -> dict[str, dict[str, list[Any]]]:
