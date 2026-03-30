@@ -47,12 +47,12 @@ class TestGroupMetrics:
     def test_group_single_dict(self):
         dicts = [{"a": {"x": 1, "y": 2}}]
         result = group_metrics(dicts)
-        assert result == {"a": {"x": [1], "y": [2]}}
+        assert result == {"a": [{"x": 1, "y": 2}]}
 
     def test_group_multiple_dicts(self):
         dicts = [{"a": {"x": 1}}, {"a": {"x": 2, "y": 3}, "b": {"z": 4}}]
         result = group_metrics(dicts)
-        assert result == {"a": {"x": [1, 2], "y": [3]}, "b": {"z": [4]}}
+        assert result == {"a": [{"x": 1}, {"x": 2, "y": 3}], "b": [{"z": 4}]}
 
     def test_group_empty_list(self):
         result = group_metrics([])
@@ -65,6 +65,11 @@ class TestGroupMetrics:
             {"metric2": {"score": 0.7, "date": "2024-01-01"}},
         ]
         result = group_metrics(dicts)
-        assert result["metric1"]["score"] == [0.9, 0.85]
-        assert result["metric1"]["date"] == ["2024-01-01", "2024-01-02"]
-        assert result["metric2"]["score"] == [0.7]
+        assert isinstance(result["metric1"], list)
+        assert len(result["metric1"]) == 2
+        assert result["metric1"][0].get("score") == 0.9
+        assert result["metric1"][1].get("score") == 0.85
+
+        assert isinstance(result["metric2"], list)
+        assert len(result["metric2"]) == 1
+        assert result["metric2"][0].get("score") == 0.7

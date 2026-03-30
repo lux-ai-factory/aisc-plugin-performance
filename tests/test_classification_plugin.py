@@ -1,8 +1,6 @@
 """Integration tests for classification plugin using real datasets."""
 
-import logging
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -17,7 +15,6 @@ DATASETS_DIR = Path(__file__).parent.parent / "datasets" / "classification"
 def classification_plugin():
     """Create a classification plugin instance with mocked logger."""
     plugin = ClassificationPerformancePlugin()
-    plugin.logger = MagicMock(spec=logging.Logger)
     return plugin
 
 
@@ -54,23 +51,31 @@ class TestClassificationPerformancePlugin:
         assert metric_names == expected
 
     def test_set_input_providers(self, classification_plugin, classification_data):
+        import pandas as pd
+        from onnxruntime import InferenceSession
+
         test_data, model_data = classification_data
 
-        dataset_provider = classification_plugin.set_dataset_input_provider(test_data)
-        model_provider = classification_plugin.set_model_input_provider(model_data)
+        classification_plugin.set_input_content("test-dataset", test_data)
+        classification_plugin.set_input_content("model", model_data)
 
-        assert dataset_provider is not None
-        assert model_provider is not None
-        assert classification_plugin.dataset_input_provider is dataset_provider
-        assert classification_plugin.model_input_provider is model_provider
+        assert (
+            classification_plugin._input_provider_instances.get("test-dataset")
+            is not None
+        )
+        assert classification_plugin._input_provider_instances.get("model") is not None
+        assert isinstance(
+            classification_plugin.get_input_data("test-dataset"), pd.DataFrame
+        )
+        assert isinstance(
+            classification_plugin.get_input_data("model"), InferenceSession
+        )
 
     def test_parse_config_from_dataset(
         self, classification_plugin, classification_data
     ):
         test_data, _ = classification_data
-        classification_plugin.set_dataset_input_provider(test_data)
-
-        config = classification_plugin.parse_config_from_dataset()
+        config = classification_plugin.parse_config_from_dataset(test_data)
 
         assert config is not None
         assert "features" in config
@@ -87,8 +92,8 @@ class TestClassificationPerformancePlugin:
     ):
         test_data, model_data = classification_data
 
-        classification_plugin.set_dataset_input_provider(test_data)
-        classification_plugin.set_model_input_provider(model_data)
+        classification_plugin.set_input_content("test-dataset", test_data)
+        classification_plugin.set_input_content("model", model_data)
 
         # Create config matching the dataset structure
         features = [
@@ -113,21 +118,21 @@ class TestClassificationPerformancePlugin:
         # Check all expected metrics are present
         for metric in ["Accuracy", "Precision", "Recall", "F1-Score", "MCC"]:
             assert metric in results
-            assert "score" in results[metric]
-            assert len(results[metric]["score"]) == 1  # Single window
+            assert "score" in results[metric][0]
+            assert len(results[metric]) == 1  # Single window
 
         # Check calibration metrics
         for metric in ["SCE", "ECE", "MCE"]:
             assert metric in results
-            assert "score" in results[metric]
+            assert "score" in results[metric][0]
 
     def test_evaluate_metrics_valid_ranges(
         self, classification_plugin, classification_data
     ):
         test_data, model_data = classification_data
 
-        classification_plugin.set_dataset_input_provider(test_data)
-        classification_plugin.set_model_input_provider(model_data)
+        classification_plugin.set_input_content("test-dataset", test_data)
+        classification_plugin.set_input_content("model", model_data)
 
         features = [
             Feature(name="feat1", min=0.0, max=100.0, type=FeatureType.FLOAT),
@@ -149,16 +154,16 @@ class TestClassificationPerformancePlugin:
 
         # Accuracy, Precision, Recall, F1 should be in [0, 1]
         for metric in ["Accuracy", "Precision", "Recall", "F1-Score"]:
-            score = results[metric]["score"][0]
+            score = results[metric][0]["score"]
             assert 0.0 <= score <= 1.0, f"{metric} out of range: {score}"
 
         # MCC is normalized to [0, 1] in the plugin
-        mcc = results["MCC"]["score"][0]
+        mcc = results["MCC"][0]["score"]
         assert 0.0 <= mcc <= 1.0, f"MCC out of range: {mcc}"
 
         # Calibration metrics should be non-negative
         for metric in ["SCE", "ECE", "MCE"]:
-            score = results[metric]["score"][0]
+            score = results[metric][0]["score"]
             assert score >= 0.0, f"{metric} is negative: {score}"
 
     def test_get_metric_visualizations(
@@ -166,8 +171,8 @@ class TestClassificationPerformancePlugin:
     ):
         test_data, model_data = classification_data
 
-        classification_plugin.set_dataset_input_provider(test_data)
-        classification_plugin.set_model_input_provider(model_data)
+        classification_plugin.set_input_content("test-dataset", test_data)
+        classification_plugin.set_input_content("model", model_data)
 
         # Create config matching the dataset structure (target must be in features)
         features = [

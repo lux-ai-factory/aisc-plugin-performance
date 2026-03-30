@@ -1,8 +1,6 @@
 """Integration tests for regression plugin using real datasets."""
 
-import logging
 from pathlib import Path
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -17,7 +15,6 @@ DATASETS_DIR = Path(__file__).parent.parent / "datasets" / "regression"
 def regression_plugin():
     """Create a regression plugin instance with mocked logger."""
     plugin = RegressionPerformancePlugin()
-    plugin.logger = MagicMock(spec=logging.Logger)
     return plugin
 
 
@@ -50,31 +47,42 @@ class TestRegressionPerformancePlugin:
         assert metric_names == expected
 
     def test_set_input_providers(self, regression_plugin, regression_data):
+        import pandas as pd
+        from onnxruntime import InferenceSession
+
         test_data, model_data = regression_data
 
-        dataset_provider = regression_plugin.set_dataset_input_provider(test_data)
-        model_provider = regression_plugin.set_model_input_provider(model_data)
+        regression_plugin.set_input_content("test-dataset", test_data)
+        regression_plugin.set_input_content("model", model_data)
 
-        assert dataset_provider is not None
-        assert model_provider is not None
-        assert regression_plugin.dataset_input_provider is dataset_provider
-        assert regression_plugin.model_input_provider is model_provider
+        assert (
+            regression_plugin._input_provider_instances.get("test-dataset") is not None
+        )
+        assert regression_plugin._input_provider_instances.get("model") is not None
+        assert isinstance(
+            regression_plugin.get_input_data("test-dataset"), pd.DataFrame
+        )
+        assert isinstance(regression_plugin.get_input_data("model"), InferenceSession)
 
     def test_parse_config_from_dataset(self, regression_plugin, regression_data):
         test_data, _ = regression_data
-        regression_plugin.set_dataset_input_provider(test_data)
-
-        config = regression_plugin.parse_config_from_dataset()
+        config = regression_plugin.parse_config_from_dataset(test_data)
 
         assert config is not None
         assert "features" in config
         assert len(config["features"]) > 0
+        # Check that features have expected structure
+        for feature in config["features"]:
+            assert "name" in feature
+            assert "type" in feature
+            assert "min" in feature
+            assert "max" in feature
 
     def test_evaluate_without_windowing(self, regression_plugin, regression_data):
         test_data, model_data = regression_data
 
-        regression_plugin.set_dataset_input_provider(test_data)
-        regression_plugin.set_model_input_provider(model_data)
+        regression_plugin.set_input_content("test-dataset", test_data)
+        regression_plugin.set_input_content("model", model_data)
 
         # Create config matching the dataset structure
         features = [
@@ -99,14 +107,14 @@ class TestRegressionPerformancePlugin:
         # Check all expected metrics are present
         for metric in regression_plugin.metric_names():
             assert metric in results
-            assert "score" in results[metric]
-            assert len(results[metric]["score"]) == 1  # Single window
+            assert "score" in results[metric][0]
+            assert len(results[metric]) == 1  # Single window
 
     def test_evaluate_metrics_valid_values(self, regression_plugin, regression_data):
         test_data, model_data = regression_data
 
-        regression_plugin.set_dataset_input_provider(test_data)
-        regression_plugin.set_model_input_provider(model_data)
+        regression_plugin.set_input_content("test-dataset", test_data)
+        regression_plugin.set_input_content("model", model_data)
 
         features = [
             Feature(name="feat1", min=0.0, max=100.0, type=FeatureType.FLOAT),
@@ -132,20 +140,20 @@ class TestRegressionPerformancePlugin:
             "Mean Squared Error",
             "Root Mean Squared Error",
         ]:
-            score = results[metric]["score"][0]
+            score = results[metric][0]["score"]
             assert score >= 0.0, f"{metric} is negative: {score}"
 
         # Explained Variance and R2 can be negative for bad models, but typically <= 1
         for metric in ["Explained Variance", "R2"]:
-            score = results[metric]["score"][0]
+            score = results[metric][0]["score"]
             assert score <= 1.0, f"{metric} > 1: {score}"
             assert isinstance(score, float)
 
     def test_get_metric_visualizations(self, regression_plugin, regression_data):
         test_data, model_data = regression_data
 
-        regression_plugin.set_dataset_input_provider(test_data)
-        regression_plugin.set_model_input_provider(model_data)
+        regression_plugin.set_input_content("test-dataset", test_data)
+        regression_plugin.set_input_content("model", model_data)
 
         # Create config matching the dataset structure (target must be in features)
         features = [

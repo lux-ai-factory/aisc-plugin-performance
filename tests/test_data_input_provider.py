@@ -43,9 +43,8 @@ class TestDataFrameProvider:
     def test_read_csv_single_file(self, sample_csv_bytes):
         provider = DataFrameProvider(sample_csv_bytes)
         data = provider.get_data()
-        assert "test" in data
-        assert isinstance(data["test"], pd.DataFrame)
-        assert len(data["test"]) == 5
+        assert isinstance(data, pd.DataFrame)
+        assert len(data) == 5
 
     @pytest.mark.skipif(
         not pytest.importorskip("pyarrow", reason="pyarrow not installed"),
@@ -54,16 +53,8 @@ class TestDataFrameProvider:
     def test_read_parquet_single_file(self, sample_parquet_bytes):
         provider = DataFrameProvider(sample_parquet_bytes)
         data = provider.get_data()
-        assert "test" in data
-        assert isinstance(data["test"], pd.DataFrame)
-        assert len(data["test"]) == 5
-
-    def test_read_multiple_files(self, sample_csv_bytes):
-        """When given list of bytes, should create train and test."""
-        provider = DataFrameProvider([sample_csv_bytes, sample_csv_bytes])  # ty: ignore[invalid-argument-type]
-        data = provider.get_data()
-        assert "train" in data
-        assert "test" in data
+        assert isinstance(data, pd.DataFrame)
+        assert len(data) == 5
 
 
 class TestDataFrameProviderIterator:
