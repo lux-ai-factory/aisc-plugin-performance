@@ -50,7 +50,7 @@ def group_metrics(
 
     Example:
         >>> dicts = [{"a": {"x": 1}}, {"a": {"x": 2, "y": 3}, "b": {"z": 4}}]
-        >>> result = merge_metrics(dicts)
+        >>> result = group_metrics(dicts)
         >>> print(result)
         {'a': [{'x': 1}, {'x': 2, 'y': 3}], 'b': [{'z': 4}]}
     """
