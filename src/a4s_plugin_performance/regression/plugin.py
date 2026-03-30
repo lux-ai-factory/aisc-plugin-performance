@@ -48,6 +48,9 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             r2_score,
         )
 
+        if date is None:
+            date = datetime.now()
+
         performance_metric_functions = [
             mean_absolute_error,
             root_mean_squared_error,
@@ -57,7 +60,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         ]
 
         return {
-            name: {"score": fct(y_true, y_pred), "date": date}
+            name: {"score": fct(y_true, y_pred), "time": date}
             for name, fct in zip(
                 self.performance_metric_names, performance_metric_functions
             )

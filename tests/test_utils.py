@@ -60,9 +60,9 @@ class TestGroupMetrics:
 
     def test_group_with_different_keys(self):
         dicts = [
-            {"metric1": {"score": 0.9, "date": "2024-01-01"}},
-            {"metric1": {"score": 0.85, "date": "2024-01-02"}},
-            {"metric2": {"score": 0.7, "date": "2024-01-01"}},
+            {"metric1": {"score": 0.9, "time": "2024-01-01"}},
+            {"metric1": {"score": 0.85, "time": "2024-01-02"}},
+            {"metric2": {"score": 0.7, "time": "2024-01-01"}},
         ]
         result = group_metrics(dicts)
         assert isinstance(result["metric1"], list)

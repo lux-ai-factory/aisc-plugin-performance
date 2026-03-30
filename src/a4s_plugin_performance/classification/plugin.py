@@ -59,6 +59,9 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         )
         from .calibration_metrics import classification_calibration_score_metrics
 
+        if date is None:
+            date = datetime.now()
+
         performance_metric_functions = [
             accuracy_score,
             partial(precision_score, zero_division=0),
