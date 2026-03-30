@@ -13,7 +13,7 @@ DATASETS_DIR = Path(__file__).parent.parent / "datasets" / "classification"
 
 @pytest.fixture
 def classification_plugin():
-    """Create a classification plugin instance with mocked logger."""
+    """Create a classification plugin instance."""
     plugin = ClassificationPerformancePlugin()
     return plugin
 
