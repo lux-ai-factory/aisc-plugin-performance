@@ -26,8 +26,9 @@ Both plugins take a test dataset (`*.csv` or `*.parquet`) and an ONNX model file
 from a4s_plugin_performance import ClassificationPerformancePlugin
 
 plugin = ClassificationPerformancePlugin()
-plugin.set_dataset_input_provider(test_data_bytes)
-plugin.set_model_input_provider(model_bytes)
+plugin.set_input_content("test-dataset", test_data_bytes)
+plugin.set_input_content("model", model_bytes)
+
 
 results = plugin.evaluate({
     "features": [...],
@@ -184,7 +185,7 @@ datasets/
 | Verification type | Technical test |
 | Project | [a4s-plugin-performance](https://github.com/lux-ai-factory/a4s-plugin-performance) |
 | Branch | main |
-| Version | 0.1.1 |
+| Version | 0.1.2 |
 | Project maturity | Deployed |
 | Scientific reference | - |
 | Verification targets | [Model Performance] [Classification Metrics] [Regression Metrics] [Calibration Analysis] |
