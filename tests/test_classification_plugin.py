@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from a4s_plugin_performance.classification.plugin import ClassificationPerformancePlugin
+from a4s_plugin_performance import ClassificationPerformancePlugin
 from a4s_plugin_performance.utils import Feature, FeatureType
 
 

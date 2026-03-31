@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from a4s_plugin_performance.regression.plugin import RegressionPerformancePlugin
+from a4s_plugin_performance import RegressionPerformancePlugin
 from a4s_plugin_performance.utils import Feature, FeatureType
 
 
