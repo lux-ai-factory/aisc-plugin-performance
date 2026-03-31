@@ -16,6 +16,11 @@ class OnnxInputProvider(BaseInputProvider):
         session: InferenceSession = InferenceSession(file_content)
         return session
 
+
+class OnnxModelSession:
+    def __init__(self, session: "InferenceSession"):
+        self.session = session
+
     def predict(
         self, x_test: "npt.ArrayLike | pd.DataFrame", probabilities: bool = False
     ) -> "npt.NDArray[np.float32]":
@@ -30,15 +35,13 @@ class OnnxInputProvider(BaseInputProvider):
         else:
             raise ValueError(f"x_test should be np.ndarray, found: {type(x_test)}")
 
-        if self._data is None:
+        if self.session is None:
             raise ValueError(
                 f"Please call {self.__class__.__name__}._read_data(...) first"
             )
 
-        session = self._data
-
         # determine expected dtype
-        expected = session.get_inputs()[0].type
+        expected = self.session.get_inputs()[0].type
         target_dtype: npt.DTypeLike
         if "tensor(float)" in expected:
             target_dtype = np.float32
@@ -54,7 +57,7 @@ class OnnxInputProvider(BaseInputProvider):
             x = x.reshape(1, -1)
 
         # Get output candidates
-        out_candidates = session.get_outputs()
+        out_candidates = self.session.get_outputs()
 
         if probabilities:
             # prefer a 'prob'/'probab' output if available (for classification)
@@ -70,13 +73,17 @@ class OnnxInputProvider(BaseInputProvider):
             idx = 0
         output_name = out_candidates[idx].name
 
-        raw = session.run([output_name], {session.get_inputs()[0].name: x})[0]
+        raw = self.session.run([output_name], {self.session.get_inputs()[0].name: x})[0]
 
         # handle ZipMap case for classification probabilities (list of dicts)
         if probabilities and isinstance(raw, list) and raw and isinstance(raw[0], dict):
             keys = list(raw[0].keys())
             arr = np.array(
-                [[row.get(k, 0.0) for k in keys] for row in raw], dtype=np.float32
+                [
+                    [row.get(k, 0.0) for k in keys]  # ty: ignore[unresolved-attribute]
+                    for row in raw
+                ],
+                dtype=np.float32,
             )
             return arr
 

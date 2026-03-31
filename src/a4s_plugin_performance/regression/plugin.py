@@ -6,8 +6,8 @@ from a4s_plugin_interface.models.measure import MetricVisualization, ChartType
 
 from ..utils import add_metrics, group_metrics
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
-from ..data_input_provider import DataFrameProvider
-from ..model_input_provider import OnnxInputProvider
+from ..data_input_provider import dataframe_iter
+from ..model_input_provider import OnnxModelSession
 
 if TYPE_CHECKING:
     import numpy as np
@@ -68,6 +68,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
 
     def evaluate(self, config_data: dict[str, Any]) -> dict[str, dict[str, list[Any]]]:
         import pandas as pd
+        from onnxruntime import InferenceSession
 
         self.logger.info("Starting regression evaluation")
         config = self.validate_config_form_data(config_data)
@@ -109,12 +110,13 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             "Test data shape: %s, target shape: %s", x_test_np.shape, y_true.shape
         )
 
-        model_provider = self._input_provider_instances.get("model")
-        assert isinstance(model_provider, OnnxInputProvider)
+        session = self.get_input_data("model")
+        assert isinstance(session, InferenceSession)
+        model_session = OnnxModelSession(session)
         self.logger.debug("Running model predictions")
 
         try:
-            y_pred = model_provider.predict(x_test_np, probabilities=False)
+            y_pred = model_session.predict(x_test_np, probabilities=False)
         except Exception:
             self.logger.exception(
                 "Model prediction failed for input shape %s", x_test_np.shape
@@ -123,9 +125,9 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
 
         self.logger.debug("Predictions shape: %s", y_pred.shape)
 
-        dataset_provider = self._input_provider_instances.get("test-dataset")
-        assert isinstance(dataset_provider, DataFrameProvider)
-        dates_masks = list(dataset_provider.iter(date_feature, frequency, window_size))
+        df = self.get_input_data("test-dataset")
+        assert isinstance(df, pd.DataFrame)
+        dates_masks = list(dataframe_iter(df, date_feature, frequency, window_size))
         iterations = len(dates_masks)
         self.logger.info("Processing %d time windows", iterations)
 
