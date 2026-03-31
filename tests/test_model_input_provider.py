@@ -3,7 +3,10 @@
 import pytest
 import numpy as np
 
-from a4s_plugin_performance.model_input_provider import OnnxInputProvider
+from a4s_plugin_performance.model_input_provider import (
+    OnnxInputProvider,
+    OnnxModelSession,
+)
 
 
 class TestOnnxInputProvider:
@@ -50,9 +53,9 @@ class TestOnnxInputProvider:
 
     def test_predict_with_numpy_array(self, simple_onnx_model):
         provider = OnnxInputProvider(simple_onnx_model)
+        model_session = OnnxModelSession(provider.get_data())
         X = np.array([[1.5, 2.5], [3.5, 4.5]], dtype=np.float32)
-        # For classification without probabilities, we get class labels
-        predictions = provider.predict(X, probabilities=False)
+        predictions = model_session.predict(X, probabilities=False)
         assert predictions.shape[0] == 2
         assert predictions.dtype == np.float32
         # Class predictions should be 0 or 1
@@ -62,14 +65,16 @@ class TestOnnxInputProvider:
         import pandas as pd
 
         provider = OnnxInputProvider(simple_onnx_model)
+        model_session = OnnxModelSession(provider.get_data())
         X = pd.DataFrame({"a": [1.5, 3.5], "b": [2.5, 4.5]})
-        predictions = provider.predict(X, probabilities=False)
+        predictions = model_session.predict(X, probabilities=False)
         assert predictions.shape[0] == 2
 
     def test_predict_probabilities(self, simple_onnx_model):
         provider = OnnxInputProvider(simple_onnx_model)
+        model_session = OnnxModelSession(provider.get_data())
         X = np.array([[1.5, 2.5], [3.5, 4.5]], dtype=np.float32)
-        proba = provider.predict(X, probabilities=True)
+        proba = model_session.predict(X, probabilities=True)
         assert proba.shape[0] == 2
         assert proba.shape[1] == 2  # Binary classification
         # Probabilities should sum to ~1
@@ -77,15 +82,17 @@ class TestOnnxInputProvider:
 
     def test_predict_regression(self, regression_onnx_model):
         provider = OnnxInputProvider(regression_onnx_model)
+        model_session = OnnxModelSession(provider.get_data())
         X = np.array([[1.5, 2.5], [3.5, 4.5]], dtype=np.float32)
-        predictions = provider.predict(X, probabilities=False)
+        predictions = model_session.predict(X, probabilities=False)
         assert predictions.shape[0] == 2
         assert predictions.dtype == np.float32
 
     def test_predict_invalid_input_type(self, simple_onnx_model):
         provider = OnnxInputProvider(simple_onnx_model)
+        model_session = OnnxModelSession(provider.get_data())
         with pytest.raises(ValueError, match="x_test should be np.ndarray"):
-            provider.predict([[1, 2], [3, 4]], probabilities=False)
+            model_session.predict([[1, 2], [3, 4]], probabilities=False)
 
     def test_predict_without_loading_model(self):
         """OnnxInputProvider with None raises TypeError during initialization."""
