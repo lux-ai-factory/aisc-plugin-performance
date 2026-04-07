@@ -177,10 +177,12 @@ datasets/
 
 ## Plugin Metadata
 
+### Classification Performance Plugin
+
 | Field | Value |
 |-------|-------|
-| Name | A4S Performance Plugin |
-| Description | A Python plugin for ML model performance evaluation, implementing classification metrics (Accuracy, Precision, Recall, F1-Score, MCC, Confusion Matrix), calibration metrics (ECE, MCE, SCE), and regression metrics (MAE, MSE, RMSE, R2, Explained Variance). Supports time-windowed evaluation and ONNX model inference. |
+| Name | Classification Performance |
+| Description | Computes classification metrics (Accuracy, Precision, Recall, F1-Score, MCC, Confusion Matrix) and calibration metrics (ECE, MCE, SCE). |
 | License | - |
 | Verification type | Technical test |
 | Project | [a4s-plugin-performance](https://github.com/lux-ai-factory/a4s-plugin-performance) |
@@ -188,5 +190,21 @@ datasets/
 | Version | 0.1.2 |
 | Project maturity | Deployed |
 | Scientific reference | - |
-| Verification targets | [Model Performance] [Classification Metrics] [Regression Metrics] [Calibration Analysis] |
+| Verification targets | [Model Performance] [Classification Metrics] [Calibration Analysis] |
+| Sector | [AI/ML] [Data Science] [MLOps] |
+
+### Regression Performance Plugin
+
+| Field | Value |
+|-------|-------|
+| Name | Regression Performance |
+| Description | Computes regression metrics (MAE, MSE, RMSE, R2, Explained Variance). |
+| License | - |
+| Verification type | Technical test |
+| Project | [a4s-plugin-performance](https://github.com/lux-ai-factory/a4s-plugin-performance) |
+| Branch | main |
+| Version | 0.1.2 |
+| Project maturity | Deployed |
+| Scientific reference | - |
+| Verification targets | [Model Performance] [Regression Metrics] |
 | Sector | [AI/ML] [Data Science] [MLOps] |
