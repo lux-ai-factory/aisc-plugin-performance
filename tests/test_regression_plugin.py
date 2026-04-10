@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from a4s_plugin_performance import RegressionPerformancePlugin
-from a4s_plugin_performance.utils import Feature, FeatureType
+from vera_plugin_performance import RegressionPerformancePlugin
+from vera_plugin_performance.utils import Feature, FeatureType
 
 
 DATASETS_DIR = Path(__file__).parent.parent / "datasets" / "regression"
@@ -13,7 +13,7 @@ DATASETS_DIR = Path(__file__).parent.parent / "datasets" / "regression"
 
 @pytest.fixture
 def regression_plugin():
-    """Create a regression plugin instance with mocked logger."""
+    """Create a regression plugin instance."""
     plugin = RegressionPerformancePlugin()
     return plugin
 

@@ -2,7 +2,7 @@ import copy
 from abc import abstractmethod
 from typing import Any
 
-from a4s_plugin_interface import (
+from vera_plugin_interface import (
     BaseEvaluationPlugin,
     PluginFeatureFlags,
     InputType,
