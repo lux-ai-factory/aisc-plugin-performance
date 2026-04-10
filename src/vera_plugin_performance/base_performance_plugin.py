@@ -179,5 +179,5 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
         return form_data, config_schema, ui_schema
 
     @abstractmethod
-    def evaluate(self, config_data: dict[str, Any]) -> dict[str, dict[str, list[Any]]]:
+    def evaluate(self, config_data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         raise NotImplementedError

@@ -65,7 +65,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             )
         }
 
-    def evaluate(self, config_data: dict[str, Any]) -> dict[str, dict[str, list[Any]]]:
+    def evaluate(self, config_data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         import pandas as pd
         from onnxruntime import InferenceSession
 

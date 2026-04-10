@@ -110,7 +110,7 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
 
         return metrics
 
-    def evaluate(self, config_data: dict[str, Any]) -> dict[str, dict[str, list[Any]]]:
+    def evaluate(self, config_data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         import numpy as np
         import pandas as pd
         from onnxruntime import InferenceSession
