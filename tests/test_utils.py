@@ -1,6 +1,6 @@
 """Tests for utility functions."""
 
-from a4s_plugin_performance.utils import (
+from vera_plugin_performance.utils import (
     Feature,
     FeatureType,
     group_metrics,

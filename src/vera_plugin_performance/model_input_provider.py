@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any
 
-from a4s_plugin_interface.input_providers.base_input_provider import BaseInputProvider
+from vera_plugin_interface import BaseInputProvider
 
 if TYPE_CHECKING:
     import numpy as np

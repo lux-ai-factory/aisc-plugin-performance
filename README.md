@@ -1,8 +1,8 @@
-# a4s-plugin-performance
+# vera-plugin-performance
 
-[![CI](https://github.com/lux-ai-factory/a4s-plugin-performance/actions/workflows/ci.yml/badge.svg)](https://github.com/lux-ai-factory/a4s-plugin-performance/actions/workflows/ci.yml)
+[![CI](https://github.com/lux-ai-factory/vera-plugin-performance/actions/workflows/ci.yml/badge.svg)](https://github.com/lux-ai-factory/vera-plugin-performance/actions/workflows/ci.yml)
 
-A Python plugin for ML model performance evaluation, implementing classification and regression metrics. Built on the [a4s-plugin-interface](https://github.com/lux-ai-factory/a4s-plugin-interface) framework.
+A Python plugin for ML model performance evaluation, implementing classification and regression metrics. Built on the [vera-plugin-interface](https://github.com/lux-ai-factory/vera-plugin-interface) framework.
 
 ## Features
 
@@ -23,7 +23,7 @@ uv sync
 Both plugins take a test dataset (`*.csv` or `*.parquet`) and an ONNX model file (`*.onnx`).
 
 ```python
-from a4s_plugin_performance import ClassificationPerformancePlugin
+from vera_plugin_performance import ClassificationPerformancePlugin
 
 plugin = ClassificationPerformancePlugin()
 plugin.set_input_content("test-dataset", test_data_bytes)
@@ -138,7 +138,7 @@ git commit --no-verify -m "message"
 ### Project Structure
 
 ```
-src/a4s_plugin_performance/
+src/vera_plugin_performance/
 ├── __init__.py                    # Public exports
 ├── base_performance_plugin.py     # Abstract base class for plugins
 ├── config_form.py                 # Pydantic config + UI schema
@@ -185,9 +185,9 @@ datasets/
 | Description | Computes classification metrics (Accuracy, Precision, Recall, F1-Score, MCC, Confusion Matrix) and calibration metrics (ECE, MCE, SCE). |
 | License | - |
 | Verification type | Technical test |
-| Project | [a4s-plugin-performance](https://github.com/lux-ai-factory/a4s-plugin-performance) |
+| Project | [vera-plugin-performance](https://github.com/lux-ai-factory/vera-plugin-performance) |
 | Branch | main |
-| Version | 0.1.2 |
+| Version | 0.2.0 |
 | Project maturity | Deployed |
 | Scientific reference | - |
 | Verification targets | [Model Performance] [Classification Metrics] [Calibration Analysis] |
@@ -201,9 +201,9 @@ datasets/
 | Description | Computes regression metrics (MAE, MSE, RMSE, R2, Explained Variance). |
 | License | - |
 | Verification type | Technical test |
-| Project | [a4s-plugin-performance](https://github.com/lux-ai-factory/a4s-plugin-performance) |
+| Project | [vera-plugin-performance](https://github.com/lux-ai-factory/vera-plugin-performance) |
 | Branch | main |
-| Version | 0.1.2 |
+| Version | 0.2.0 |
 | Project maturity | Deployed |
 | Scientific reference | - |
 | Verification targets | [Model Performance] [Regression Metrics] |

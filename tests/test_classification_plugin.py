@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from a4s_plugin_performance import ClassificationPerformancePlugin
-from a4s_plugin_performance.utils import Feature, FeatureType
+from vera_plugin_performance import ClassificationPerformancePlugin
+from vera_plugin_performance.utils import Feature, FeatureType
 
 
 DATASETS_DIR = Path(__file__).parent.parent / "datasets" / "classification"

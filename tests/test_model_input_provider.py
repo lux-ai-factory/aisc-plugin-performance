@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 
-from a4s_plugin_performance.model_input_provider import (
+from vera_plugin_performance.model_input_provider import (
     OnnxInputProvider,
     OnnxModelSession,
 )

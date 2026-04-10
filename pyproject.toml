@@ -1,11 +1,11 @@
 [project]
-name = "a4s-plugin-performance"
-version = "0.1.2"
-description = "A4S Dashboard plugin for evaluating model performance metrics"
+name = "vera-plugin-performance"
+version = "0.2.0"
+description = "VERA Dashboard plugin for evaluating model performance metrics"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "a4s-plugin-interface",
+    "vera-plugin-interface",
     "numpy>=2.4.1",
     "onnxruntime>=1.23.2",
     "pandas>=2.3.3",
@@ -27,7 +27,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-a4s-plugin-interface = { git = "https://github.com/lux-ai-factory/a4s-plugin-interface" }
+vera-plugin-interface = { git = "https://github.com/lux-ai-factory/vera-plugin-interface" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

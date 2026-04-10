@@ -5,7 +5,10 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from a4s_plugin_performance.data_input_provider import DataFrameProvider, dataframe_iter
+from vera_plugin_performance.data_input_provider import (
+    DataFrameProvider,
+    dataframe_iter,
+)
 
 
 class TestDataFrameProvider:
