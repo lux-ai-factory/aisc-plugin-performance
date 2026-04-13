@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
     plugin_name = "Classification Performance"
 
+    ui_icon = "category"
+
     performance_metric_names = [
         "Accuracy",
         "Precision",
@@ -36,10 +38,6 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
     @classmethod
     def metric_names(cls) -> list[str]:
         return cls.performance_metric_names + cls.calibration_metric_names
-
-    @property
-    def display_icon(self) -> str:
-        return "category"
 
     def _calculate_metrics(
         self,

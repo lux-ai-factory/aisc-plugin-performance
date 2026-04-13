@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
     plugin_name = "Regression Performance"
 
+    ui_icon = "trending_up"
+
     performance_metric_names = [
         "Mean Absolute Error",
         "Mean Squared Error",
@@ -28,10 +30,6 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
     @classmethod
     def metric_names(cls) -> list[str]:
         return cls.performance_metric_names
-
-    @property
-    def display_icon(self) -> str:
-        return "trending_up"
 
     def _calculate_metrics(
         self,
