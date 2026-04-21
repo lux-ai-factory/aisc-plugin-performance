@@ -136,6 +136,8 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             "predictions.csv", df_pred.to_csv(index=True).encode("utf-8")
         )
 
+        self.report_progress(TaskProgress(progress=0, extra={"iteration": 0}))
+
         results = []
         for i, (date, mask) in enumerate(dates_masks, start=1):
             if mask.sum() == 0:
