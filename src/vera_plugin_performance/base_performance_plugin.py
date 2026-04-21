@@ -1,18 +1,22 @@
 import copy
 from abc import abstractmethod
-from typing import Any
+from typing import Any, TypeVar
+from collections.abc import Iterable, Iterator, Sized
 
 from vera_plugin_interface import (
     BaseEvaluationPlugin,
     PluginFeatureFlags,
     InputType,
     evaluation_input,
+    TaskProgress,
 )
 
 from .config_form import ConfigForm, FORM_UI_SCHEMA
 from .utils import Feature, FeatureType
 from .data_input_provider import DataFrameProvider
 from .model_input_provider import OnnxInputProvider
+
+T = TypeVar("T")
 
 
 @evaluation_input(
@@ -181,6 +185,42 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
                 ui_schema["target_feature"] = {"ui:widget": "hidden"}
 
         return form_data, config_schema, ui_schema
+
+    def iter_with_progress(
+        self,
+        iterable: Iterable[T],
+        total: int | None = None,
+        start: int = 1,
+    ) -> Iterator[T]:
+        if total is None:
+            if isinstance(iterable, Sized):
+                total = len(iterable)
+            else:
+                iterable = list(iterable)
+                total = len(iterable)
+
+        if total == 0:
+            return
+
+        report_progress = self.report_progress
+
+        if start > 0:
+            report_progress(
+                TaskProgress(
+                    progress=(start - 1) / total,
+                    extra={"iteration": start - 1},
+                )
+            )
+
+        for i, x in enumerate(iterable, start=start):
+            yield x
+            progress = i / total if i <= total else 1.0
+            report_progress(
+                TaskProgress(
+                    progress=progress,
+                    extra={"iteration": i},
+                )
+            )
 
     @abstractmethod
     def evaluate(self, config_data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:

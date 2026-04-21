@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from vera_plugin_interface import TaskProgress, MetricVisualization, ChartType
+from vera_plugin_interface import MetricVisualization, ChartType
 
 from ..utils import add_metrics, group_metrics
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
@@ -136,10 +136,10 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             "predictions.csv", df_pred.to_csv(index=True).encode("utf-8")
         )
 
-        self.report_progress(TaskProgress(progress=0, extra={"iteration": 0}))
-
         results = []
-        for i, (date, mask) in enumerate(dates_masks, start=1):
+        for i, (date, mask) in enumerate(
+            self.iter_with_progress(dates_masks, total=iterations), start=1
+        ):
             if mask.sum() == 0:
                 self.logger.warning(
                     "Window %d/%d (date=%s) has no samples, skipping",
@@ -169,10 +169,6 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
                     date,
                 )
                 raise
-
-            self.report_progress(
-                TaskProgress(progress=i / iterations, extra={"iteration": i})
-            )
 
         self.logger.info("Regression evaluation completed")
         return group_metrics(results)
