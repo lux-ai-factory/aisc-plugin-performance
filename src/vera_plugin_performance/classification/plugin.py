@@ -118,8 +118,8 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
 
         target_col = config.target_feature
         date_feature = config.date_feature
-        frequency = config.frequency
-        window_size = config.window_size
+        frequency = config.frequency.strip()
+        window_size = config.window_size.strip()
         # TODO: add `date_round`
 
         columns_features = [
@@ -248,7 +248,11 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         # )
         # is_multivalued = len(list(islice(df_date_iterator, 2))) > 1
 
-        is_multivalued = config.date_feature and config.frequency and config.window_size
+        is_multivalued = (
+            config.date_feature
+            and config.frequency.strip()
+            and config.window_size.strip()
+        )
         per_chart_type = ChartType.LINE if is_multivalued else ChartType.RADAR
         cal_chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
 

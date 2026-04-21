@@ -122,6 +122,8 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
         if form_data is None:
             ui_schema["date_feature"] = {"ui:widget": "hidden"}
             ui_schema["target_feature"] = {"ui:widget": "hidden"}
+            ui_schema["frequency"] = {"ui:widget": "hidden"}
+            ui_schema["window_size"] = {"ui:widget": "hidden"}
             return None, config_schema, ui_schema
 
         # Convert to dict for property access if needed
@@ -150,6 +152,8 @@ class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
                 config_schema["properties"]["date_feature"]["default"] = default_date
             else:
                 ui_schema["date_feature"] = {"ui:widget": "hidden"}
+                ui_schema["frequency"] = {"ui:widget": "hidden"}
+                ui_schema["window_size"] = {"ui:widget": "hidden"}
 
         if (
             "properties" in config_schema
