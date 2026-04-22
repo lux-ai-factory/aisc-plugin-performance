@@ -188,8 +188,12 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         )
 
         results = []
-        for i, (date, mask) in enumerate(
-            self.iter_with_progress(dates_masks, total=iterations), start=1
+        for i, (date, mask) in self.progress_bar(
+            dates_masks,
+            total=iterations,
+            start=1,
+            show_index=True,
+            desc="Classification metrics",
         ):
             if mask.sum() == 0:
                 self.logger.warning(
