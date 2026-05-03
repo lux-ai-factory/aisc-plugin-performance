@@ -59,11 +59,12 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         if date is None:
             date = datetime.now()
 
+        # Simple performance metrics
         performance_metric_functions = [
             accuracy_score,
-            partial(precision_score, zero_division=0),
-            partial(recall_score, zero_division=0),
-            partial(f1_score, zero_division=0),
+            partial(precision_score, zero_division=0, average="weighted"),
+            partial(recall_score, zero_division=0, average="weighted"),
+            partial(f1_score, zero_division=0, average="weighted"),
         ]
 
         metrics = [
