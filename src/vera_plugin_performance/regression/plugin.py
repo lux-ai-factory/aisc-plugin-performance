@@ -137,13 +137,14 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         )
 
         results = []
-        for i, (date, mask) in self.progress_bar(
+        pbar = self.progress_bar(
             dates_masks,
             total=iterations,
             start=1,
-            show_index=True,
+            with_index=True,
             desc="Regression metrics",
-        ):
+        )
+        for i, (date, mask) in pbar:
             if mask.sum() == 0:
                 self.logger.warning(
                     "Window %d/%d (date=%s) has no samples, skipping",
