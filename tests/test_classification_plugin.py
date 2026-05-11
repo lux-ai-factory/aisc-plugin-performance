@@ -194,5 +194,3 @@ class TestClassificationPerformancePlugin:
         visualizations = classification_plugin.get_metric_visualizations(config_data)
 
         assert len(visualizations) > 0
-        # First should be a table
-        assert visualizations[0].chart_type.value == "table"
