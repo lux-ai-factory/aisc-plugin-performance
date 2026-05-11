@@ -17,16 +17,16 @@ T = TypeVar("T")
 
 
 @evaluation_input(
-    name="model",
-    label="Model",
-    input_provider_class=OnnxInputProvider,
-    input_type=InputType.MODEL,
-)
-@evaluation_input(
     name="test-dataset",
     label="Test Dataset",
     input_provider_class=DataFrameProvider,
     input_type=InputType.DATASET,
+)
+@evaluation_input(
+    name="model",
+    label="Model",
+    input_provider_class=OnnxInputProvider,
+    input_type=InputType.MODEL,
 )
 class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
     """Base class for performance evaluation plugins."""
