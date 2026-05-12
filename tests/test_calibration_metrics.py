@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 
-from vera_plugin_performance.classification.calibration_metrics import (
+from predictive_insights.classification.calibration_metrics import (
     classification_calibration_score_metrics,
     expected_calibration_error,
     maximum_calibration_error,

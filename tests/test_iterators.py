@@ -4,7 +4,7 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from vera_plugin_performance.iterators import DateIterator, get_date_batches
+from predictive_insights.iterators import DateIterator, get_date_batches
 
 
 class TestGetDateBatches:

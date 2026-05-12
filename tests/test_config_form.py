@@ -2,8 +2,8 @@
 
 import pytest
 
-from vera_plugin_performance.config_form import ConfigForm, FORM_UI_SCHEMA
-from vera_plugin_performance.utils import Feature, FeatureType
+from predictive_insights.config_form import ConfigForm, FORM_UI_SCHEMA
+from predictive_insights.utils import Feature, FeatureType
 
 
 class TestConfigForm:

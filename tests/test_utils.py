@@ -1,6 +1,6 @@
 """Tests for utility functions."""
 
-from vera_plugin_performance.utils import (
+from predictive_insights.utils import (
     Feature,
     FeatureType,
     group_metrics,

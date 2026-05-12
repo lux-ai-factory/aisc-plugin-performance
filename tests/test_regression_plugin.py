@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from vera_plugin_performance import RegressionPerformancePlugin
-from vera_plugin_performance.utils import Feature, FeatureType
+from predictive_insights import RegressionPerformancePlugin
+from predictive_insights.utils import Feature, FeatureType
 
 
 DATASETS_DIR = Path(__file__).parent.parent / "datasets" / "regression"
