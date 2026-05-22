@@ -187,7 +187,7 @@ datasets/
 | Verification type | Technical test |
 | Project | [vera-plugin-performance](https://github.com/lux-ai-factory/vera-plugin-performance) |
 | Branch | main |
-| Version | 0.2.0 |
+| Version | 0.2.1 |
 | Project maturity | Deployed |
 | Scientific reference | - |
 | Verification targets | [Model Performance] [Classification Metrics] [Calibration Analysis] |
@@ -203,7 +203,7 @@ datasets/
 | Verification type | Technical test |
 | Project | [vera-plugin-performance](https://github.com/lux-ai-factory/vera-plugin-performance) |
 | Branch | main |
-| Version | 0.2.0 |
+| Version | 0.2.1 |
 | Project maturity | Deployed |
 | Scientific reference | - |
 | Verification targets | [Model Performance] [Regression Metrics] |
