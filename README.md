@@ -23,7 +23,7 @@ uv sync
 Both plugins take a test dataset (`*.csv` or `*.parquet`) and an ONNX model file (`*.onnx`).
 
 ```python
-from vera_plugin_performance import ClassificationPerformancePlugin
+from predictive_insights import ClassificationPerformancePlugin
 
 plugin = ClassificationPerformancePlugin()
 plugin.set_input_content("test-dataset", test_data_bytes)
@@ -138,7 +138,7 @@ git commit --no-verify -m "message"
 ### Project Structure
 
 ```
-src/vera_plugin_performance/
+src/predictive_insights/
 ├── __init__.py                    # Public exports
 ├── base_performance_plugin.py     # Abstract base class for plugins
 ├── config_form.py                 # Pydantic config + UI schema

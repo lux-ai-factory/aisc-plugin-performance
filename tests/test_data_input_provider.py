@@ -5,7 +5,7 @@ import pytest
 import pandas as pd
 import numpy as np
 
-from vera_plugin_performance.data_input_provider import (
+from predictive_insights.data_input_provider import (
     DataFrameProvider,
     dataframe_iter,
 )

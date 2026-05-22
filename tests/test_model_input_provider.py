@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 
-from vera_plugin_performance.model_input_provider import (
+from predictive_insights.model_input_provider import (
     OnnxInputProvider,
     OnnxModelSession,
 )

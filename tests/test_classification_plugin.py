@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from vera_plugin_performance import ClassificationPerformancePlugin
-from vera_plugin_performance.utils import Feature, FeatureType
+from predictive_insights import ClassificationPerformancePlugin
+from predictive_insights.utils import Feature, FeatureType
 
 
 DATASETS_DIR = Path(__file__).parent.parent / "datasets" / "classification"
@@ -194,5 +194,3 @@ class TestClassificationPerformancePlugin:
         visualizations = classification_plugin.get_metric_visualizations(config_data)
 
         assert len(visualizations) > 0
-        # First should be a table
-        assert visualizations[0].chart_type.value == "table"

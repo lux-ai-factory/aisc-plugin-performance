@@ -1,5 +1,5 @@
 [project]
-name = "vera-plugin-performance"
+name = "predictive-insights"
 version = "0.2.0"
 description = "VERA Dashboard plugin for evaluating model performance metrics"
 readme = "README.md"

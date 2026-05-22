@@ -1,9 +1,12 @@
+import json
+from pathlib import Path
 from datetime import datetime
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from vera_plugin_interface import MetricVisualization, ChartType
 
+from ..config_form import ConfigForm
 from ..utils import add_metrics, group_metrics
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
 from ..data_input_provider import dataframe_iter
@@ -12,6 +15,10 @@ from ..model_input_provider import OnnxModelSession
 if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
+
+DEFAULT_CONFIG = (
+    Path(__file__).parent.resolve().absolute() / "credit_scoring_config.json"
+)
 
 
 @add_metrics
@@ -38,6 +45,28 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
     @classmethod
     def metric_names(cls) -> list[str]:
         return cls.performance_metric_names + cls.calibration_metric_names
+
+    def parse_config_from_dataset(self, file_content: bytes) -> dict | None:
+        config = super().parse_config_from_dataset(file_content)
+        if config is None:
+            return None
+
+        # Use the default config only if all its feature names are present in the dataset
+        try:
+            with open(DEFAULT_CONFIG, "r") as f:
+                data = json.load(f)
+            default_form = ConfigForm(**data)
+            default_feature_names = {f.name for f in default_form.features}
+            features = config.get("features")
+            if features is not None and default_feature_names.issubset(
+                {f.get("name") for f in features}
+            ):
+                self.logger.info("Default config matches dataset, using it")
+                return default_form.model_dump()
+        except Exception:
+            pass
+
+        return config
 
     def _calculate_metrics(
         self,
@@ -235,10 +264,6 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
     def get_metric_visualizations(self, config_data: dict) -> list[MetricVisualization]:
         config = self.validate_config_form_data(config_data)
 
-        table = MetricVisualization(
-            chart_type=ChartType.TABLE, metrics=self.get_metrics()
-        )
-
         performance_chart_metrics = [
             metric_name
             for metric_name in self.performance_metric_names
@@ -256,18 +281,19 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
             and config.window_size.strip()
         )
         per_chart_type = ChartType.LINE if is_multivalued else ChartType.RADAR
-        cal_chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
+        # cal_chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
 
         charts = [
+            # MetricVisualization(chart_type=ChartType.TABLE, metrics=self.get_metrics()),
             MetricVisualization(
                 chart_type=per_chart_type, metrics=performance_chart_metrics
             ),
-            MetricVisualization(
-                chart_type=cal_chart_type, metrics=["Confusion-Matrix"]
-            ),
-            MetricVisualization(
-                chart_type=cal_chart_type, metrics=self.calibration_metric_names
-            ),
+            # MetricVisualization(
+            #     chart_type=cal_chart_type, metrics=["Confusion-Matrix"]
+            # ),
+            # MetricVisualization(
+            #     chart_type=cal_chart_type, metrics=self.calibration_metric_names
+            # ),
         ]
 
-        return [table, *charts]
+        return charts
