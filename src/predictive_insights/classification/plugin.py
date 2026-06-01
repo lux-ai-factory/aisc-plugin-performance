@@ -4,7 +4,7 @@ from datetime import datetime
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
-from vera_plugin_interface import MetricVisualization, ChartType
+from aisc_plugin_interface import MetricVisualization, ChartType
 
 from ..config_form import ConfigForm
 from ..utils import add_metrics, group_metrics

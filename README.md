@@ -1,8 +1,8 @@
-# vera-plugin-performance
+# aisc-plugin-performance
 
-[![CI](https://github.com/lux-ai-factory/vera-plugin-performance/actions/workflows/ci.yml/badge.svg)](https://github.com/lux-ai-factory/vera-plugin-performance/actions/workflows/ci.yml)
+[![CI](https://github.com/lux-ai-factory/aisc-plugin-performance/actions/workflows/ci.yml/badge.svg)](https://github.com/lux-ai-factory/aisc-plugin-performance/actions/workflows/ci.yml)
 
-A Python plugin for ML model performance evaluation, implementing classification and regression metrics. Built on the [vera-plugin-interface](https://github.com/lux-ai-factory/vera-plugin-interface) framework.
+A Python plugin for ML model performance evaluation, implementing classification and regression metrics. Built on the [aisc-plugin-interface](https://github.com/lux-ai-factory/aisc-plugin-interface) framework.
 
 ## Features
 
@@ -185,7 +185,7 @@ datasets/
 | Description | Computes classification metrics (Accuracy, Precision, Recall, F1-Score, MCC, Confusion Matrix) and calibration metrics (ECE, MCE, SCE). |
 | License | - |
 | Verification type | Technical test |
-| Project | [vera-plugin-performance](https://github.com/lux-ai-factory/vera-plugin-performance) |
+| Project | [aisc-plugin-performance](https://github.com/lux-ai-factory/aisc-plugin-performance) |
 | Branch | main |
 | Version | 0.2.1 |
 | Project maturity | Deployed |
@@ -201,7 +201,7 @@ datasets/
 | Description | Computes regression metrics (MAE, MSE, RMSE, R2, Explained Variance). |
 | License | - |
 | Verification type | Technical test |
-| Project | [vera-plugin-performance](https://github.com/lux-ai-factory/vera-plugin-performance) |
+| Project | [aisc-plugin-performance](https://github.com/lux-ai-factory/aisc-plugin-performance) |
 | Branch | main |
 | Version | 0.2.1 |
 | Project maturity | Deployed |

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from vera_plugin_interface import MetricVisualization, ChartType
+from aisc_plugin_interface import MetricVisualization, ChartType
 
 from ..utils import add_metrics, group_metrics
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
