@@ -45,9 +45,10 @@ class TestConfigForm:
         assert dump["target_feature"] == "label"
 
     def test_validate_special_features_empty_string_to_none(self):
-        """Empty string for target_feature should be normalized to None."""
-        config = ConfigForm(target_feature="")
+        """Empty string for target/date feature should be normalized to None."""
+        config = ConfigForm(target_feature="", date_feature="")
         assert config.target_feature is None
+        assert config.date_feature is None
 
     def test_validate_special_features_valid(self):
         """target_feature must be in features list."""
