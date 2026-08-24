@@ -284,15 +284,29 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         # cal_chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
 
         charts = [
-            # MetricVisualization(chart_type=ChartType.TABLE, metrics=self.get_metrics()),
+            # MetricVisualization(
+            #     chart_type=ChartType.TABLE,
+            #     title="Classification Evaluation Metrics",
+            #     description="All the metrics for the classification model evaluation.",
+            #     metrics=self.get_metrics(),
+            # ),
             MetricVisualization(
-                chart_type=per_chart_type, metrics=performance_chart_metrics
+                chart_type=per_chart_type,
+                title="Classification Performance Metrics",
+                description="The performance metrics for the classification model.",
+                metrics=performance_chart_metrics,
             ),
             # MetricVisualization(
-            #     chart_type=cal_chart_type, metrics=["Confusion-Matrix"]
+            #     chart_type=cal_chart_type,
+            #     title="Confusion Matrix",
+            #     description="The confusion matrix for the classification model.",
+            #     metrics=["Confusion-Matrix"],
             # ),
             # MetricVisualization(
-            #     chart_type=cal_chart_type, metrics=self.calibration_metric_names
+            #     chart_type=cal_chart_type,
+            #     title="Calibration Metrics",
+            #     description="The calibration metrics for the classification model.",
+            #     metrics=self.calibration_metric_names,
             # ),
         ]
 

@@ -182,7 +182,10 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         config = self.validate_config_form_data(config_data)
 
         table = MetricVisualization(
-            chart_type=ChartType.TABLE, metrics=self.get_metrics()
+            chart_type=ChartType.TABLE,
+            title="Regression Evaluation Metrics",
+            description="All the metrics for the regression model evaluation.",
+            metrics=self.get_metrics(),
         )
 
         is_multivalued = (
@@ -192,7 +195,10 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         )
         chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
         vis = MetricVisualization(
-            chart_type=chart_type, metrics=self.performance_metric_names
+            chart_type=chart_type,
+            title="Regression Performance Metrics",
+            description="The performance metrics for the regression model.",
+            metrics=self.performance_metric_names,
         )
 
         return [table, vis]
