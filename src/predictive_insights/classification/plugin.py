@@ -4,7 +4,7 @@ from datetime import datetime
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
-from aisc_plugin_interface import MetricVisualization, ChartType
+from aisc_plugin_interface import MetricVisualization, ChartType, MetricDirection
 
 from ..config_form import ConfigForm
 from ..utils import add_metrics, group_metrics
@@ -95,11 +95,17 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
             partial(recall_score, zero_division=0, average="weighted"),
             partial(f1_score, zero_division=0, average="weighted"),
         ]
+        performance_metric_directions = [
+            MetricDirection.HIGHER_IS_BETTER,
+            MetricDirection.HIGHER_IS_BETTER,
+            MetricDirection.HIGHER_IS_BETTER,
+            MetricDirection.HIGHER_IS_BETTER,
+        ]
 
         metrics = [
-            {name: {"score": fct(y_true, y_pred), "time": date}}
-            for name, fct in zip(
-                self.performance_metric_names, performance_metric_functions
+            {name: {"score": fct(y_true, y_pred), "time": date, "direction": direction}}
+            for name, fct, direction in zip(
+                self.performance_metric_names, performance_metric_functions, performance_metric_directions
             )
         ]
 
