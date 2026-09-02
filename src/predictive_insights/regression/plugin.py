@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from aisc_plugin_interface import MetricVisualization, ChartType
+from aisc_plugin_interface import MetricVisualization, ChartType, MetricDirection
 
 from ..utils import add_metrics, group_metrics
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
@@ -55,11 +55,18 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             explained_variance_score,
             r2_score,
         ]
+        performance_metric_directions = [
+            MetricDirection.LOWER_IS_BETTER,
+            MetricDirection.LOWER_IS_BETTER,
+            MetricDirection.LOWER_IS_BETTER,
+            MetricDirection.HIGHER_IS_BETTER,
+            MetricDirection.HIGHER_IS_BETTER,
+        ]
 
         return {
-            name: {"score": fct(y_true, y_pred), "time": date}
-            for name, fct in zip(
-                self.performance_metric_names, performance_metric_functions
+            name: {"score": fct(y_true, y_pred), "time": date, "direction": direction}
+            for name, fct, direction in zip(
+                self.performance_metric_names, performance_metric_functions, performance_metric_directions
             )
         }
 
@@ -182,7 +189,10 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         config = self.validate_config_form_data(config_data)
 
         table = MetricVisualization(
-            chart_type=ChartType.TABLE, metrics=self.get_metrics()
+            chart_type=ChartType.TABLE,
+            title="Regression Evaluation Metrics",
+            description="All the metrics for the regression model evaluation.",
+            metrics=self.get_metrics(),
         )
 
         is_multivalued = (
@@ -192,7 +202,10 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         )
         chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
         vis = MetricVisualization(
-            chart_type=chart_type, metrics=self.performance_metric_names
+            chart_type=chart_type,
+            title="Regression Performance Metrics",
+            description="The performance metrics for the regression model.",
+            metrics=self.performance_metric_names,
         )
 
         return [table, vis]
