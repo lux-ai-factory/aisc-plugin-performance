@@ -87,3 +87,14 @@ class ConfigForm(BaseModel):
         if target_feature == date_feature:
             raise ValueError("Target feature must be different from date feature.")
         return self
+
+
+class ClassificationConfigForm(ConfigForm):
+    target_probability_field: str = Field(
+        default="probability",
+        title="Probability field of the scoring service",
+        description="When the evaluation assesses a scoring service of the AI card: where its answer"
+        " carries the probability of class 1 (a field name, dotted for a nested field). Not used for"
+        " a local model file.",
+        examples=["probability", "p_default", "risk.p"],
+    )

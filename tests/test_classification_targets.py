@@ -85,3 +85,21 @@ def test_an_ai_card_target_is_measured_like_the_local_model(card_target):
     for name, values in golden.items():
         assert [m["score"] for m in got[name]] == pytest.approx([m["score"] for m in values], abs=1e-6), name
     assert len([r for r in card_target.seen if r["path"] == "/score"]) == 24       # each row sent once
+
+
+def test_the_config_says_where_a_scoring_service_answers_the_probability(card_target):
+    card_target.route("/score", 200, scorer_answer(
+        lambda p: {"decision": "decline" if p > 0.5 else "approve", "p_default": p}))
+    results = plugin_on_card_target().evaluate(dict(config(), target_probability_field="p_default"))
+
+    golden = json.loads(GOLDEN.read_text())
+    assert measures(results).keys() == golden.keys()
+    assert results["Accuracy"][0]["score"] == pytest.approx(golden["Accuracy"][0]["score"])
+
+
+def test_an_answer_without_the_probability_fails_naming_its_path(card_target):
+    from aisc_plugin_interface.connections import EndpointBadResponse
+
+    card_target.route("/score", 200, {"decision": "approve"})
+    with pytest.raises(EndpointBadResponse, match=r"row 1.*'p_default'"):
+        plugin_on_card_target().evaluate(dict(config(), target_probability_field="p_default"))
