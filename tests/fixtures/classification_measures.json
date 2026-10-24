@@ -1,0 +1,64 @@
+{
+  "Accuracy": [
+    {
+      "score": 0.7916666666666666,
+      "direction": "higher"
+    }
+  ],
+  "Precision": [
+    {
+      "score": 0.8229166666666666,
+      "direction": "higher"
+    }
+  ],
+  "Recall": [
+    {
+      "score": 0.7916666666666666,
+      "direction": "higher"
+    }
+  ],
+  "F1-Score": [
+    {
+      "score": 0.794973544973545,
+      "direction": "higher"
+    }
+  ],
+  "Confusion-Matrix": [
+    {
+      "score": 11.0,
+      "description": "(1,1)/(2,2)"
+    },
+    {
+      "score": 4.0,
+      "description": "(1,2)/(2,2)"
+    },
+    {
+      "score": 1.0,
+      "description": "(2,1)/(2,2)"
+    },
+    {
+      "score": 8.0,
+      "description": "(2,2)/(2,2)"
+    }
+  ],
+  "MCC": [
+    {
+      "score": 0.8012320380383546
+    }
+  ],
+  "SCE": [
+    {
+      "score": 0.5312180904050667
+    }
+  ],
+  "ECE": [
+    {
+      "score": 0.19093203047911325
+    }
+  ],
+  "MCE": [
+    {
+      "score": 0.4552687525749206
+    }
+  ]
+}
