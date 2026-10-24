@@ -75,15 +75,20 @@ def plugin_on_card_target():
     return plugin
 
 
-def test_an_ai_card_target_is_measured_like_the_local_model(card_target):
-    card_target.route("/score", 200, scorer_answer(lambda p: {"label": int(p > 0.5), "probability": p}))
-    results = plugin_on_card_target().evaluate(config())
-
+def assert_measured_like_the_local_model(results):
+    """Every measure of the golden local run, each score within 1e-6 (the scorer answers in JSON floats)."""
     golden = json.loads(GOLDEN.read_text())
     got = measures(results)
     assert {name: len(values) for name, values in got.items()} == {name: len(values) for name, values in golden.items()}
     for name, values in golden.items():
         assert [m["score"] for m in got[name]] == pytest.approx([m["score"] for m in values], abs=1e-6), name
+
+
+def test_an_ai_card_target_is_measured_like_the_local_model(card_target):
+    card_target.route("/score", 200, scorer_answer(lambda p: {"label": int(p > 0.5), "probability": p}))
+    results = plugin_on_card_target().evaluate(config())
+
+    assert_measured_like_the_local_model(results)
     assert len([r for r in card_target.seen if r["path"] == "/score"]) == 24       # each row sent once
 
 
@@ -92,9 +97,7 @@ def test_the_config_says_where_a_scoring_service_answers_the_probability(card_ta
         lambda p: {"decision": "decline" if p > 0.5 else "approve", "p_default": p}))
     results = plugin_on_card_target().evaluate(dict(config(), target_probability_field="p_default"))
 
-    golden = json.loads(GOLDEN.read_text())
-    assert measures(results).keys() == golden.keys()
-    assert results["Accuracy"][0]["score"] == pytest.approx(golden["Accuracy"][0]["score"])
+    assert_measured_like_the_local_model(results)
 
 
 def test_an_answer_without_the_probability_fails_naming_its_path(card_target):
@@ -109,5 +112,4 @@ def test_a_nested_probability_field_is_read_where_the_config_says_and_not_at_the
     card_target.route("/score", 200, scorer_answer(lambda p: {"probability": "high", "risk": {"p": p}}))
     results = plugin_on_card_target().evaluate(dict(config(), target_probability_field="risk.p"))
 
-    golden = json.loads(GOLDEN.read_text())
-    assert results["Accuracy"][0]["score"] == pytest.approx(golden["Accuracy"][0]["score"])
+    assert_measured_like_the_local_model(results)
