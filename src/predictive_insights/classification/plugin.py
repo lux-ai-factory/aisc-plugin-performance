@@ -207,6 +207,9 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
             raise
 
         assert isinstance(df_test, pd.DataFrame)
+        # nothing to measure: refused here, before a scoring service is called or numpy fails on no rows
+        if df_test.empty:
+            raise ValueError("the test set has no rows, so there is nothing to score")
         y_true = df_test[target_col].to_numpy()
         self.logger.debug(
             "Test data shape: %s, target shape: %s", df_test[columns_features].shape, y_true.shape

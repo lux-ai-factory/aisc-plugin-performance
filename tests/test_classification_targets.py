@@ -115,3 +115,12 @@ def test_a_nested_probability_field_is_read_where_the_config_says_and_not_at_the
     results = plugin_on_card_target().evaluate(dict(config(), target_probability_field="risk.p"))
 
     assert_measured_like_the_local_model(results)
+
+
+def test_an_empty_test_set_is_refused_before_anything_is_scored():
+    plugin = ClassificationPerformancePlugin()
+    plugin._set_artifact_callback(lambda name, content: None)
+    plugin.set_input_content("test-dataset", b"feat1,feat2,feat3,feat4,target\n")
+    plugin.set_input_content("model", scoring_model_bytes())
+    with pytest.raises(ValueError, match="the test set has no rows"):
+        plugin.evaluate(config())
