@@ -20,7 +20,6 @@ from ..config_form import ConfigForm
 from ..utils import add_metrics, group_metrics
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
 from ..data_input_provider import dataframe_iter
-from ..model_input_provider import OnnxModelSession
 
 if TYPE_CHECKING:
     import numpy as np
@@ -170,8 +169,6 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
     def evaluate(self, config_data: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
         import numpy as np
         import pandas as pd
-        from onnxruntime import InferenceSession
-
         self.logger.info("Starting classification evaluation")
         config = self.validate_config_form_data(config_data)
 
@@ -206,25 +203,26 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
             raise
 
         assert isinstance(df_test, pd.DataFrame)
-        x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
         self.logger.debug(
-            "Test data shape: %s, target shape: %s", x_test_np.shape, y_true.shape
+            "Test data shape: %s, target shape: %s", df_test[columns_features].shape, y_true.shape
         )
 
-        session = self.get_input_data("model")
-        assert isinstance(session, InferenceSession)
-        model_session = OnnxModelSession(session)
+        # the uploaded ONNX file or the AI card's scoring service, whichever the run binds
+        model = self.assessed_model()
+        rows = df_test[columns_features].to_dict(orient="records")
         self.logger.debug("Running model predictions")
 
         try:
-            y_pred_proba = model_session.predict(x_test_np, probabilities=True)
+            y_pred_proba = np.asarray(model.predict_proba(rows), dtype=np.float32)
         except Exception:
             self.logger.exception(
-                "Model prediction failed for input shape %s", x_test_np.shape
+                "Model prediction failed for input shape %s", df_test[columns_features].shape
             )
             raise
 
+        # the label is the more probable class, for both models: a scoring service's own label values
+        # (its words for the decision) need not be the dataset's classes
         y_pred = np.argmax(y_pred_proba, axis=1)
         self.logger.debug(
             "Predictions shape: %s, probabilities shape: %s",
