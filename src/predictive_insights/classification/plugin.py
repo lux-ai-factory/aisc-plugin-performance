@@ -4,7 +4,17 @@ from datetime import datetime
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
-from aisc_plugin_interface import MetricVisualization, ChartType, MetricDirection
+from aisc_plugin_interface import (
+    ChartType,
+    InputType,
+    MetricDirection,
+    MetricVisualization,
+    OnnxInputProvider,
+    assesses,
+    evaluation_input,
+    model_session,
+    onnx,
+)
 
 from ..config_form import ConfigForm
 from ..utils import add_metrics, group_metrics
@@ -21,6 +31,19 @@ DEFAULT_CONFIG = (
 )
 
 
+# A run assesses one of the two: the ONNX file uploaded to the project, or a scoring service of the
+# AI card reached through its connection, which answers each row with the probability of class 1.
+@assesses(
+    card=model_session(outputs={"probability": "probability"}),
+    local_model=onnx(input="model"),
+)
+@evaluation_input(
+    name="model",
+    label="Model",
+    input_provider_class=OnnxInputProvider,
+    input_type=InputType.MODEL,
+    required=False,
+)
 @add_metrics
 class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
     plugin_name = "Classification Performance"

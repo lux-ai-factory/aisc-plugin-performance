@@ -1,18 +1,30 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from aisc_plugin_interface import MetricVisualization, ChartType, MetricDirection
+from aisc_plugin_interface import (
+    ChartType,
+    InputType,
+    MetricDirection,
+    MetricVisualization,
+    evaluation_input,
+)
 
 from ..utils import add_metrics, group_metrics
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
 from ..data_input_provider import dataframe_iter
-from ..model_input_provider import OnnxModelSession
+from ..model_input_provider import OnnxInputProvider, OnnxModelSession
 
 if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
 
 
+@evaluation_input(
+    name="model",
+    label="Model",
+    input_provider_class=OnnxInputProvider,
+    input_type=InputType.MODEL,
+)
 @add_metrics
 class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
     plugin_name = "Regression Performance"

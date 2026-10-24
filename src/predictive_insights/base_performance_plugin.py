@@ -11,7 +11,6 @@ from aisc_plugin_interface import (
 from .config_form import ConfigForm, FORM_UI_SCHEMA
 from .utils import Feature, FeatureType
 from .data_input_provider import DataFrameProvider
-from .model_input_provider import OnnxInputProvider
 
 T = TypeVar("T")
 
@@ -22,14 +21,9 @@ T = TypeVar("T")
     input_provider_class=DataFrameProvider,
     input_type=InputType.DATASET,
 )
-@evaluation_input(
-    name="model",
-    label="Model",
-    input_provider_class=OnnxInputProvider,
-    input_type=InputType.MODEL,
-)
 class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
-    """Base class for performance evaluation plugins."""
+    """Base class for performance evaluation plugins. Each plugin declares its own model input
+    ("model") and what it assesses."""
 
     form_ui_schema = FORM_UI_SCHEMA
 

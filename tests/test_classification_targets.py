@@ -25,3 +25,10 @@ def plugin_with(model: bytes | None = None) -> ClassificationPerformancePlugin:
 def test_a_local_model_file_is_measured_as_before():
     results = plugin_with(model=scoring_model_bytes()).evaluate(config())
     assert measures(results) == json.loads(GOLDEN.read_text())
+
+
+def test_it_assesses_an_ai_card_target_or_a_local_model_file():
+    from aisc_plugin_interface import card_needs_connection, target_kinds_of
+
+    assert target_kinds_of(ClassificationPerformancePlugin) == ("card", "local_model")
+    assert card_needs_connection(ClassificationPerformancePlugin)
