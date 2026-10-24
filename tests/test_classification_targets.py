@@ -8,7 +8,7 @@ import pytest
 
 from predictive_insights import ClassificationPerformancePlugin
 
-from .scoring_fixtures import config, measures, scoring_dataset_csv, scoring_model_bytes
+from .scoring_fixtures import FEATURES, config, measures, scoring_dataset_csv, scoring_model_bytes
 
 GOLDEN = Path(__file__).parent / "fixtures" / "classification_measures.json"
 
@@ -89,7 +89,9 @@ def test_an_ai_card_target_is_measured_like_the_local_model(card_target):
     results = plugin_on_card_target().evaluate(config())
 
     assert_measured_like_the_local_model(results)
-    assert len([r for r in card_target.seen if r["path"] == "/score"]) == 24       # each row sent once
+    sent = [json.loads(r["body"]) for r in card_target.seen if r["path"] == "/score"]
+    assert len(sent) == 24                                                       # each row sent once
+    assert all(set(body) == set(FEATURES) for body in sent)                      # its features, not its class
 
 
 def test_the_config_says_where_a_scoring_service_answers_the_probability(card_target):
