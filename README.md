@@ -58,6 +58,15 @@ Computes classification metrics using predicted classes (`y_pred`), predicted pr
 | MCE | Maximum Calibration Error |
 | SCE | Static Calibration Error |
 
+**What it assesses.** A run measures one of two models, with the same metrics:
+
+- a local model file: the ONNX file uploaded to the project, in the `model` input;
+- an AI card target: a scoring service of the AI card, reached through its connection. Each row of
+  the test set (its features, as JSON) is sent once, and the answer must carry the probability of
+  class 1 in the field named by the config field `target_probability_field` (default `probability`,
+  dotted for a nested field, e.g. `risk.p`). An answer without it stops the run, naming the row and the
+  field. Binary classification only; the predicted class is the more probable one.
+
 ### Regression Performance Plugin
 
 Computes regression metrics using model outputs (`y_pred`) and ground truth (`y_true`).
