@@ -103,3 +103,11 @@ def test_an_answer_without_the_probability_fails_naming_its_path(card_target):
     card_target.route("/score", 200, {"decision": "approve"})
     with pytest.raises(EndpointBadResponse, match=r"row 1.*'p_default'"):
         plugin_on_card_target().evaluate(dict(config(), target_probability_field="p_default"))
+
+
+def test_a_nested_probability_field_is_read_where_the_config_says_and_not_at_the_default(card_target):
+    card_target.route("/score", 200, scorer_answer(lambda p: {"probability": "high", "risk": {"p": p}}))
+    results = plugin_on_card_target().evaluate(dict(config(), target_probability_field="risk.p"))
+
+    golden = json.loads(GOLDEN.read_text())
+    assert results["Accuracy"][0]["score"] == pytest.approx(golden["Accuracy"][0]["score"])

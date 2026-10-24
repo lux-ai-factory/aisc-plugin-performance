@@ -16,8 +16,6 @@ from aisc_plugin_interface import (
     onnx,
 )
 
-from aisc_plugin_interface.model_session import EndpointSession
-
 from ..config_form import ClassificationConfigForm, ConfigForm
 from ..utils import add_metrics, group_metrics
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
@@ -215,11 +213,10 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         )
 
         # the uploaded ONNX file or the AI card's scoring service, whichever the run binds
-        model = self.assessed_model()
-        if isinstance(model, EndpointSession):
-            # each scoring service names the probability its own way: the config says where it is
-            field = config.target_probability_field.strip() or "probability"
-            model = EndpointSession(model.client, {"probability": field})
+        # each scoring service names the probability its own way: the config says where it is
+        # (a local model file ignores it)
+        probability_field = config.target_probability_field.strip() or "probability"
+        model = self.assessed_model(outputs={"probability": probability_field})
         rows = df_test[columns_features].to_dict(orient="records")
         self.logger.debug("Running model predictions")
 
