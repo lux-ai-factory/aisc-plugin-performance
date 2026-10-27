@@ -61,16 +61,12 @@ class TestSklearnVsOnnx:
             train_df = train_df.sample(n=1000, random_state=42)
 
         drop_cols = drop_cols or []
-        feature_cols = [
-            c for c in train_df.columns if c not in drop_cols + [target_col]
-        ]
+        feature_cols = [c for c in train_df.columns if c not in drop_cols + [target_col]]
         X_train = train_df[feature_cols].to_numpy()
         y_train = train_df[target_col].to_numpy()
         X_test = test_df[feature_cols].to_numpy()
 
-        sk_model, onnx_bytes = train_sklearn_converted_to_onnx(
-            X_train, y_train, model_type
-        )
+        sk_model, onnx_bytes = train_sklearn_converted_to_onnx(X_train, y_train, model_type)
 
         provider = OnnxInputProvider(onnx_bytes)
         session = OnnxModelSession(provider.get_data())

@@ -61,9 +61,7 @@ class OnnxModelSession:
         outputs = self._run(x)
 
         idx = (
-            self.io.probability_output_index
-            if self.io.probability_output_index is not None
-            else 0
+            self.io.probability_output_index if self.io.probability_output_index is not None else 0
         )
 
         raw = outputs[idx]
@@ -79,11 +77,7 @@ class OnnxModelSession:
         elif arr.ndim == 2 and arr.shape[1] == 1:
             arr = np.column_stack((1.0 - arr[:, 0], arr[:, 0]))
 
-        if (
-            arr.ndim == 2
-            and arr.shape[1] == 2
-            and np.allclose(arr.sum(axis=1), 0, atol=1e-4)
-        ):
+        if arr.ndim == 2 and arr.shape[1] == 2 and np.allclose(arr.sum(axis=1), 0, atol=1e-4):
             # Binary output with zipmap=False: centered scores, column 1 = P(positive)
             prob_positive = np.clip(arr[:, 1:2], 0, 1)
             prob_negative = 1.0 - prob_positive

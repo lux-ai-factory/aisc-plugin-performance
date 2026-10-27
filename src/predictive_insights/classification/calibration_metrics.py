@@ -44,9 +44,7 @@ def classification_calibration_score_metrics(
     y_pred = np.argmax(y_pred_proba, axis=1)
     accuracies = (y_pred == y_true).astype(np.float32)
 
-    bin_counts, avg_conf, avg_acc, nonzero = _compute_bin_stats(
-        confidences, accuracies, n_bins
-    )
+    bin_counts, avg_conf, avg_acc, nonzero = _compute_bin_stats(confidences, accuracies, n_bins)
 
     gap = np.abs(avg_acc - avg_conf)
 
@@ -63,9 +61,7 @@ def classification_calibration_score_metrics(
         ),
         dict(
             name="MCE",
-            score=maximum_calibration_error(
-                bin_counts, avg_conf, avg_acc, nonzero, gap
-            ),
+            score=maximum_calibration_error(bin_counts, avg_conf, avg_acc, nonzero, gap),
         ),
     ]
 
@@ -161,9 +157,7 @@ def static_calibration_error(
         class_probs = y_pred_proba[:, c]
         class_acc = (y_true == c).astype(np.float32)
 
-        bin_counts, avg_conf, avg_acc, nonzero = _compute_bin_stats(
-            class_probs, class_acc, n_bins
-        )
+        bin_counts, avg_conf, avg_acc, nonzero = _compute_bin_stats(class_probs, class_acc, n_bins)
 
         gap = np.abs(avg_acc - avg_conf)
         sce += np.sum((bin_counts[nonzero] / n_samples) * gap[nonzero])

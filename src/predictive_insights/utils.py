@@ -1,10 +1,6 @@
-import uuid
-from datetime import datetime
-from enum import Enum
 from collections import defaultdict
+from datetime import datetime
 from typing import Any, Protocol, TypeVar
-
-from pydantic import BaseModel, Field, field_serializer
 
 from aisc_plugin_interface import Measure, metric
 
@@ -15,25 +11,6 @@ class _HasMetricNames(Protocol):
 
 
 T = TypeVar("T", bound=_HasMetricNames)
-
-
-class FeatureType(str, Enum):
-    INTEGER = "Integer"
-    FLOAT = "Float"
-    CATEGORICAL = "Categorical"
-    DATE = "Date"
-
-
-class Feature(BaseModel):
-    pid: uuid.UUID = Field(default_factory=uuid.uuid4)
-    name: str = Field(...)
-    min: float = Field(...)
-    max: float = Field(...)
-    type: FeatureType = Field(...)
-
-    @field_serializer("pid")
-    def serialize_pid(self, pid: uuid.UUID | None) -> str | None:
-        return str(pid) if pid is not None else None
 
 
 def group_metrics(
@@ -68,6 +45,9 @@ def add_metrics(cls: type[T]) -> type[T]:
 
         @metric(name)
         def fct(self, evaluation_output: dict, _name=name) -> list[Measure]:
+            if not evaluation_output:
+                return []
+
             measures: list[dict] = evaluation_output.get(_name, [])
 
             return [

@@ -17,6 +17,19 @@ if TYPE_CHECKING:
 class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
     plugin_name = "Regression Performance"
 
+    description = (
+        "Evaluates a trained ONNX regression model against a test dataset, reporting "
+        "mean absolute error, mean squared error, root mean squared error, R2 and "
+        "explained variance.\n\n"
+        "**Configuration:**\n\n"
+        "- **Frequency** — data frequency of batch starts for time-series analysis "
+        "(e.g. `30D`, `1M`). Leave empty to evaluate the whole test set at once.\n"
+        "- **Window Size** — duration of each analysis window (e.g. `90 days`, `3 months`); "
+        "together with Frequency this splits the evaluation into sliding time windows.\n\n"
+        "**Try it:** upload a test dataset and an ONNX model, and attach the project's "
+        "**Data Shape** so the target and date columns are resolved automatically."
+    )
+
     ui_icon = "trending_up"
 
     performance_metric_names = [
@@ -66,7 +79,9 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         return {
             name: {"score": fct(y_true, y_pred), "time": date, "direction": direction}
             for name, fct, direction in zip(
-                self.performance_metric_names, performance_metric_functions, performance_metric_directions
+                self.performance_metric_names,
+                performance_metric_functions,
+                performance_metric_directions,
             )
         }
 
@@ -77,20 +92,13 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         self.logger.info("Starting regression evaluation")
         config = self.validate_config_form_data(config_data)
 
-        target_col = config.target_feature
-        date_feature = config.date_feature
+        target_col, date_feature, columns_features = self._read_datashape()
         frequency = config.frequency.strip()
         window_size = config.window_size.strip()
         # TODO: add `date_round`
 
-        columns_features = [
-            f.name for f in config.features if f.name not in (target_col, date_feature)
-        ]
-
         if not columns_features:
-            self.logger.warning(
-                "No input features found after excluding target and date"
-            )
+            self.logger.warning("No input features found with role 'feature' in the data shape")
 
         self.logger.debug(
             "Config: target=%s, date_feature=%s, frequency=%s, window=%s, features=%d",
@@ -110,9 +118,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         assert isinstance(df_test, pd.DataFrame)
         x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
-        self.logger.debug(
-            "Test data shape: %s, target shape: %s", x_test_np.shape, y_true.shape
-        )
+        self.logger.debug("Test data shape: %s, target shape: %s", x_test_np.shape, y_true.shape)
 
         session = self.get_input_data("model")
         assert isinstance(session, InferenceSession)
@@ -122,9 +128,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         try:
             y_pred = model_session.predict(x_test_np, probabilities=False)
         except Exception:
-            self.logger.exception(
-                "Model prediction failed for input shape %s", x_test_np.shape
-            )
+            self.logger.exception("Model prediction failed for input shape %s", x_test_np.shape)
             raise
 
         self.logger.debug("Predictions shape: %s", y_pred.shape)
@@ -139,9 +143,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
         df_pred = pd.DataFrame(y_pred, index=df.index)
         if date_feature is not None and date_feature in df.columns:
             df_pred.insert(0, date_feature, df[date_feature])
-        self.upload_artifact(
-            "predictions.csv", df_pred.to_csv(index=True).encode("utf-8")
-        )
+        self.upload_artifact("predictions.csv", df_pred.to_csv(index=True).encode("utf-8"))
 
         results = []
         pbar = self.progress_bar(
@@ -170,9 +172,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             )
 
             try:
-                results.append(
-                    self._calculate_metrics(y_true[mask], y_pred[mask], date=date)
-                )
+                results.append(self._calculate_metrics(y_true[mask], y_pred[mask], date=date))
             except Exception:
                 self.logger.exception(
                     "Metric calculation failed for window %d/%d (date=%s)",
@@ -195,11 +195,7 @@ class RegressionPerformancePlugin(BasePerformanceEvaluationPlugin):
             metrics=self.get_metrics(),
         )
 
-        is_multivalued = (
-            config.date_feature
-            and config.frequency.strip()
-            and config.window_size.strip()
-        )
+        is_multivalued = bool(config.frequency.strip() and config.window_size.strip())
         chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
         vis = MetricVisualization(
             chart_type=chart_type,

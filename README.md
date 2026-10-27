@@ -20,7 +20,11 @@ uv sync
 
 ## Quick Start
 
-Both plugins take a test dataset (`*.csv` or `*.parquet`) and an ONNX model file (`*.onnx`).
+Both plugins take a test dataset (`*.csv` or `*.parquet`), an ONNX model file
+(`*.onnx`), and the project's **Data Shape** input (the data/feature shape is an
+AI component owned by the project — create it from the uploaded dataset on the
+Settings page; feature roles designate the target, the optional date column, and
+the model features).
 
 ```python
 from predictive_insights import ClassificationPerformancePlugin
@@ -28,14 +32,12 @@ from predictive_insights import ClassificationPerformancePlugin
 plugin = ClassificationPerformancePlugin()
 plugin.set_input_content("test-dataset", test_data_bytes)
 plugin.set_input_content("model", model_bytes)
+plugin.set_input_content("datashape", datashape_payload_bytes)
 
 
 results = plugin.evaluate({
-    "features": [...],
-    "target_feature": "label",
-    "date_feature": "timestamp",  # optional
-    "frequency": "7D",            # optional
-    "window_size": "30D",         # optional
+    "frequency": "7D",    # optional
+    "window_size": "30D", # optional
 })
 ```
 
@@ -73,13 +75,14 @@ Computes regression metrics using model outputs (`y_pred`) and ground truth (`y_
 
 ## Time-Windowed Evaluation
 
-Metrics can be computed over the entire test set or over temporal windows:
+Metrics can be computed over the entire test set or over temporal windows. The
+column holding dates is resolved from the **Data Shape** (a feature with
+`role="date"`):
 
 ```python
 config = {
-    "date_feature": "timestamp",  # Column containing dates
-    "frequency": "7D",            # Window hop size (e.g., weekly)
-    "window_size": "30D",         # Window duration (e.g., 30 days)
+    "frequency": "7D",    # Window hop size (e.g., weekly)
+    "window_size": "30D", # Window duration (e.g., 30 days)
 }
 ```
 
@@ -187,7 +190,7 @@ datasets/
 | Verification type | Technical test |
 | Project | [aisc-plugin-performance](https://github.com/lux-ai-factory/aisc-plugin-performance) |
 | Branch | main |
-| Version | 0.2.2 |
+| Version | 0.3.0 |
 | Project maturity | Deployed |
 | Scientific reference | - |
 | Verification targets | [Model Performance] [Classification Metrics] [Calibration Analysis] |
@@ -203,7 +206,7 @@ datasets/
 | Verification type | Technical test |
 | Project | [aisc-plugin-performance](https://github.com/lux-ai-factory/aisc-plugin-performance) |
 | Branch | main |
-| Version | 0.2.2 |
+| Version | 0.3.0 |
 | Project maturity | Deployed |
 | Scientific reference | - |
 | Verification targets | [Model Performance] [Regression Metrics] |

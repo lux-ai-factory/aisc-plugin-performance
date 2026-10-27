@@ -1,21 +1,22 @@
 """Integration tests for regression plugin using real datasets."""
 
+import json
 from pathlib import Path
 
 import pytest
 
 from predictive_insights import RegressionPerformancePlugin
-from predictive_insights.utils import Feature, FeatureType
 
 
 DATASETS_DIR = Path(__file__).parent.parent / "datasets" / "regression"
+
+FEATURE_COLUMNS = ["feat1", "feat2", "feat3", "feat4"]
 
 
 @pytest.fixture
 def regression_plugin():
     """Create a regression plugin instance."""
-    plugin = RegressionPerformancePlugin()
-    return plugin
+    return RegressionPerformancePlugin()
 
 
 @pytest.fixture
@@ -26,6 +27,17 @@ def regression_data():
     return test_data, model_data
 
 
+@pytest.fixture
+def regression_inputs(regression_plugin, regression_data, datashape_payload):
+    """Plugin with test-dataset, model and datashape inputs attached."""
+    test_data, model_data = regression_data
+    regression_plugin.set_input_content("test-dataset", test_data)
+    regression_plugin.set_input_content("model", model_data)
+    payload = datashape_payload([*FEATURE_COLUMNS, "target"], target="target")
+    regression_plugin.set_input_content("datashape", json.dumps(payload).encode())
+    return regression_plugin
+
+
 class TestRegressionPerformancePlugin:
     """Integration tests for RegressionPerformancePlugin."""
 
@@ -34,6 +46,13 @@ class TestRegressionPerformancePlugin:
 
     def test_display_icon(self, regression_plugin):
         assert regression_plugin.display_icon == "trending_up"
+
+    def test_description(self, regression_plugin):
+        description = regression_plugin.description
+        assert description.startswith("Evaluates a trained ONNX regression model")
+        assert "**Configuration:**" in description
+        assert "- **Frequency**" in description
+        assert "- **Window Size**" in description
 
     def test_metric_names(self, regression_plugin):
         metric_names = regression_plugin.metric_names()
@@ -55,84 +74,31 @@ class TestRegressionPerformancePlugin:
         regression_plugin.set_input_content("test-dataset", test_data)
         regression_plugin.set_input_content("model", model_data)
 
-        assert (
-            regression_plugin._input_provider_instances.get("test-dataset") is not None
-        )
+        assert regression_plugin._input_provider_instances.get("test-dataset") is not None
         assert regression_plugin._input_provider_instances.get("model") is not None
-        assert isinstance(
-            regression_plugin.get_input_data("test-dataset"), pd.DataFrame
-        )
+        assert isinstance(regression_plugin.get_input_data("test-dataset"), pd.DataFrame)
         assert isinstance(regression_plugin.get_input_data("model"), InferenceSession)
 
-    def test_parse_config_from_dataset(self, regression_plugin, regression_data):
-        test_data, _ = regression_data
-        config = regression_plugin.parse_config_from_dataset(test_data)
-
-        assert config is not None
-        assert "features" in config
-        assert len(config["features"]) > 0
-        # Check that features have expected structure
-        for feature in config["features"]:
-            assert "name" in feature
-            assert "type" in feature
-            assert "min" in feature
-            assert "max" in feature
-
-    def test_evaluate_without_windowing(self, regression_plugin, regression_data):
+    def test_evaluate_missing_datashape_raises(self, regression_plugin, regression_data):
         test_data, model_data = regression_data
-
         regression_plugin.set_input_content("test-dataset", test_data)
         regression_plugin.set_input_content("model", model_data)
 
-        # Create config matching the dataset structure
-        features = [
-            Feature(name="feat1", min=0.0, max=100.0, type=FeatureType.FLOAT),
-            Feature(name="feat2", min=0.0, max=10.0, type=FeatureType.FLOAT),
-            Feature(name="feat3", min=0.0, max=100.0, type=FeatureType.FLOAT),
-            Feature(name="feat4", min=0.0, max=1.0, type=FeatureType.INTEGER),
-            Feature(name="target", min=0.0, max=100.0, type=FeatureType.FLOAT),
-        ]
+        with pytest.raises(ValueError, match="Data Shape input is required"):
+            regression_plugin.evaluate({"frequency": "", "window_size": ""})
 
-        config_data = {
-            "frequency": "",
-            "window_size": "",
-            "features": [f.model_dump() for f in features],
-            "date_feature": None,
-            "target_feature": "target",
-        }
-
-        results = regression_plugin.evaluate(config_data)
+    def test_evaluate_without_windowing(self, regression_inputs):
+        results = regression_inputs.evaluate({"frequency": "", "window_size": ""})
 
         assert isinstance(results, dict)
         # Check all expected metrics are present
-        for metric in regression_plugin.metric_names():
+        for metric in regression_inputs.metric_names():
             assert metric in results
             assert "score" in results[metric][0]
             assert len(results[metric]) == 1  # Single window
 
-    def test_evaluate_metrics_valid_values(self, regression_plugin, regression_data):
-        test_data, model_data = regression_data
-
-        regression_plugin.set_input_content("test-dataset", test_data)
-        regression_plugin.set_input_content("model", model_data)
-
-        features = [
-            Feature(name="feat1", min=0.0, max=100.0, type=FeatureType.FLOAT),
-            Feature(name="feat2", min=0.0, max=10.0, type=FeatureType.FLOAT),
-            Feature(name="feat3", min=0.0, max=100.0, type=FeatureType.FLOAT),
-            Feature(name="feat4", min=0.0, max=1.0, type=FeatureType.INTEGER),
-            Feature(name="target", min=0.0, max=100.0, type=FeatureType.FLOAT),
-        ]
-
-        config_data = {
-            "frequency": "",
-            "window_size": "",
-            "features": [f.model_dump() for f in features],
-            "date_feature": None,
-            "target_feature": "target",
-        }
-
-        results = regression_plugin.evaluate(config_data)
+    def test_evaluate_metrics_valid_values(self, regression_inputs):
+        results = regression_inputs.evaluate({"frequency": "", "window_size": ""})
 
         # MAE, MSE, RMSE should be non-negative
         for metric in [
@@ -149,30 +115,10 @@ class TestRegressionPerformancePlugin:
             assert score <= 1.0, f"{metric} > 1: {score}"
             assert isinstance(score, float)
 
-    def test_get_metric_visualizations(self, regression_plugin, regression_data):
-        test_data, model_data = regression_data
-
-        regression_plugin.set_input_content("test-dataset", test_data)
-        regression_plugin.set_input_content("model", model_data)
-
-        # Create config matching the dataset structure (target must be in features)
-        features = [
-            Feature(name="feat1", min=0.0, max=100.0, type=FeatureType.FLOAT),
-            Feature(name="feat2", min=0.0, max=10.0, type=FeatureType.FLOAT),
-            Feature(name="feat3", min=0.0, max=100.0, type=FeatureType.FLOAT),
-            Feature(name="feat4", min=0.0, max=1.0, type=FeatureType.INTEGER),
-            Feature(name="target", min=0.0, max=100.0, type=FeatureType.FLOAT),
-        ]
-
-        config_data = {
-            "frequency": "",
-            "window_size": "",
-            "features": [f.model_dump() for f in features],
-            "date_feature": None,
-            "target_feature": "target",
-        }
-
-        visualizations = regression_plugin.get_metric_visualizations(config_data)
+    def test_get_metric_visualizations(self, regression_inputs):
+        visualizations = regression_inputs.get_metric_visualizations(
+            {"frequency": "", "window_size": ""}
+        )
 
         assert len(visualizations) == 2
         # First should be a table

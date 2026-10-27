@@ -1,12 +1,9 @@
-import json
-from pathlib import Path
 from datetime import datetime
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from aisc_plugin_interface import MetricVisualization, ChartType, MetricDirection
 
-from ..config_form import ConfigForm
 from ..utils import add_metrics, group_metrics
 from ..base_performance_plugin import BasePerformanceEvaluationPlugin
 from ..data_input_provider import dataframe_iter
@@ -16,14 +13,23 @@ if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
 
-DEFAULT_CONFIG = (
-    Path(__file__).parent.resolve().absolute() / "credit_scoring_config.json"
-)
-
 
 @add_metrics
 class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
     plugin_name = "Classification Performance"
+
+    description = (
+        "Evaluates a trained ONNX classification model against a test dataset, reporting "
+        "accuracy, precision, recall, F1-score, MCC, the full confusion matrix, and the "
+        "calibration metrics SCE, ECE and MCE.\n\n"
+        "**Configuration:**\n\n"
+        "- **Frequency** — data frequency of batch starts for time-series analysis "
+        "(e.g. `30D`, `1M`). Leave empty to evaluate the whole test set at once.\n"
+        "- **Window Size** — duration of each analysis window (e.g. `90 days`, `3 months`); "
+        "together with Frequency this splits the evaluation into sliding time windows.\n\n"
+        "**Try it:** upload a test dataset and an ONNX model, and attach the project's "
+        "**Data Shape** so the target and date columns are resolved automatically."
+    )
 
     ui_icon = "category"
 
@@ -45,28 +51,6 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
     @classmethod
     def metric_names(cls) -> list[str]:
         return cls.performance_metric_names + cls.calibration_metric_names
-
-    def parse_config_from_dataset(self, file_content: bytes) -> dict | None:
-        config = super().parse_config_from_dataset(file_content)
-        if config is None:
-            return None
-
-        # Use the default config only if all its feature names are present in the dataset
-        try:
-            with open(DEFAULT_CONFIG, "r") as f:
-                data = json.load(f)
-            default_form = ConfigForm(**data)
-            default_feature_names = {f.name for f in default_form.features}
-            features = config.get("features")
-            if features is not None and default_feature_names.issubset(
-                {f.get("name") for f in features}
-            ):
-                self.logger.info("Default config matches dataset, using it")
-                return default_form.model_dump()
-        except Exception:
-            pass
-
-        return config
 
     def _calculate_metrics(
         self,
@@ -105,7 +89,9 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         metrics = [
             {name: {"score": fct(y_true, y_pred), "time": date, "direction": direction}}
             for name, fct, direction in zip(
-                self.performance_metric_names, performance_metric_functions, performance_metric_directions
+                self.performance_metric_names,
+                performance_metric_functions,
+                performance_metric_directions,
             )
         ]
 
@@ -136,9 +122,7 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         )
 
         # Calibration
-        calibration_dicts = classification_calibration_score_metrics(
-            y_true, y_pred_proba, y_pred
-        )
+        calibration_dicts = classification_calibration_score_metrics(y_true, y_pred_proba, y_pred)
         for d in calibration_dicts:
             metrics.append({d["name"]: {"score": d["score"], "time": date}})
 
@@ -152,20 +136,13 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         self.logger.info("Starting classification evaluation")
         config = self.validate_config_form_data(config_data)
 
-        target_col = config.target_feature
-        date_feature = config.date_feature
+        target_col, date_feature, columns_features = self._read_datashape()
         frequency = config.frequency.strip()
         window_size = config.window_size.strip()
         # TODO: add `date_round`
 
-        columns_features = [
-            f.name for f in config.features if f.name not in (target_col, date_feature)
-        ]
-
         if not columns_features:
-            self.logger.warning(
-                "No input features found after excluding target and date"
-            )
+            self.logger.warning("No input features found with role 'feature' in the data shape")
 
         self.logger.debug(
             "Config: target=%s, date_feature=%s, frequency=%s, window=%s, features=%d",
@@ -185,9 +162,7 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         assert isinstance(df_test, pd.DataFrame)
         x_test_np = df_test[columns_features].to_numpy()
         y_true = df_test[target_col].to_numpy()
-        self.logger.debug(
-            "Test data shape: %s, target shape: %s", x_test_np.shape, y_true.shape
-        )
+        self.logger.debug("Test data shape: %s, target shape: %s", x_test_np.shape, y_true.shape)
 
         session = self.get_input_data("model")
         assert isinstance(session, InferenceSession)
@@ -197,9 +172,7 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         try:
             y_pred_proba = model_session.predict(x_test_np, probabilities=True)
         except Exception:
-            self.logger.exception(
-                "Model prediction failed for input shape %s", x_test_np.shape
-            )
+            self.logger.exception("Model prediction failed for input shape %s", x_test_np.shape)
             raise
 
         y_pred = np.argmax(y_pred_proba, axis=1)
@@ -219,9 +192,7 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         df_pred = pd.DataFrame(y_pred_proba, index=df.index)
         if date_feature is not None and date_feature in df.columns:
             df_pred.insert(0, date_feature, df[date_feature])
-        self.upload_artifact(
-            "predictions.csv", df_pred.to_csv(index=True).encode("utf-8")
-        )
+        self.upload_artifact("predictions.csv", df_pred.to_csv(index=True).encode("utf-8"))
 
         results = []
         pbar = self.progress_bar(
@@ -281,11 +252,7 @@ class ClassificationPerformancePlugin(BasePerformanceEvaluationPlugin):
         # )
         # is_multivalued = len(list(islice(df_date_iterator, 2))) > 1
 
-        is_multivalued = (
-            config.date_feature
-            and config.frequency.strip()
-            and config.window_size.strip()
-        )
+        is_multivalued = bool(config.frequency.strip() and config.window_size.strip())
         per_chart_type = ChartType.LINE if is_multivalued else ChartType.RADAR
         # cal_chart_type = ChartType.LINE if is_multivalued else ChartType.BARS
 

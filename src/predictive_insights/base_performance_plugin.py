@@ -1,21 +1,22 @@
-import copy
-from typing import Any, TypeVar
+from typing import Any, cast
 
 from aisc_plugin_interface import (
     BaseEvaluationPlugin,
-    PluginFeatureFlags,
     InputType,
     evaluation_input,
 )
 
-from .config_form import ConfigForm, FORM_UI_SCHEMA
-from .utils import Feature, FeatureType
+from .config_form import ConfigForm
 from .data_input_provider import DataFrameProvider
 from .model_input_provider import OnnxInputProvider
 
-T = TypeVar("T")
 
-
+@evaluation_input(
+    name="datashape",
+    label="Data Shape",
+    input_type=InputType.DATASHAPE,
+    required=False,
+)
 @evaluation_input(
     name="test-dataset",
     label="Test Dataset",
@@ -31,172 +32,59 @@ T = TypeVar("T")
 class BasePerformanceEvaluationPlugin(BaseEvaluationPlugin[ConfigForm]):
     """Base class for performance evaluation plugins."""
 
-    form_ui_schema = FORM_UI_SCHEMA
+    @staticmethod
+    def _datashape_features(payload: object) -> list[dict[str, Any]]:
+        """Normalize a datashape payload to a list of feature dicts.
 
-    @property
-    def feature_flags(self) -> PluginFeatureFlags:
-        return PluginFeatureFlags(can_parse_config_from_dataset=True)
+        Accepts a full ``DataShape`` payload and the default features-only
+        payload the platform emits (``{"features": [...]}``).
+        """
+        if not isinstance(payload, dict):
+            return []
+        raw_features = payload.get("features")
+        if not isinstance(raw_features, list):
+            return []
+        return [cast("dict[str, Any]", f) for f in raw_features if isinstance(f, dict)]
 
-    def parse_config_from_dataset(self, file_content: bytes) -> dict | None:
-        import pandas as pd
+    def _read_datashape(self) -> tuple[str, str | None, list[str]]:
+        """Resolve (target, date, feature columns) from the datashape input.
 
-        self.logger.info("Parsing config from dataset")
+        The datashape component's ``json_value`` is the feature schema: a full
+        ``DataShape`` payload or the default features-only payload
+        (``{"features": [...]}``).  Feature ``role`` designates the target, the
+        optional date axis, and the model features.
 
-        config: ConfigForm = ConfigForm(
-            target_feature=None,
-            date_feature=None,
-            frequency="",
-            window_size="",
-            features=[],
-        )
+        Returns:
+            Tuple of (target column, date column or None, feature columns).
 
-        try:
-            input_provider = DataFrameProvider(file_content)
-            input_provider.get_data()
-            df: pd.DataFrame = input_provider.get_data()
-        except Exception:
-            self.logger.exception("Failed to load dataset for config parsing")
-            raise
-
-        if df.empty:
-            self.logger.warning("Dataset is empty, returning default config")
-            return config.model_dump()
-
-        self.logger.debug(
-            "Dataset loaded with %d rows and %d columns", len(df), len(df.columns)
-        )
-
-        for col_name in df.columns:
-            col_data = df[col_name]
-
-            feature_type = FeatureType.CATEGORICAL
-
-            # Check for Date
-            if pd.api.types.is_datetime64_any_dtype(col_data):
-                feature_type = FeatureType.DATE
-            elif pd.api.types.is_object_dtype(col_data):
-                temp = pd.to_datetime(col_data, errors="coerce")
-                if temp.isna().any():
-                    self.logger.warning(
-                        "Attempted to parse '%s' as a date, but failed", col_name
-                    )
-                else:
-                    feature_type = FeatureType.DATE
-
-            # Check for Numeric
-            if feature_type != FeatureType.DATE:
-                if pd.api.types.is_integer_dtype(col_data):
-                    feature_type = FeatureType.INTEGER
-                elif pd.api.types.is_float_dtype(col_data):
-                    feature_type = FeatureType.FLOAT
-
-            # Get Min/Max for Numeric types
-            if feature_type in [FeatureType.INTEGER, FeatureType.FLOAT]:
-                col_min = float(col_data.min()) if not pd.isna(col_data.min()) else 0.0
-                col_max = float(col_data.max()) if not pd.isna(col_data.max()) else 0.0
-            else:
-                # For Categorical or Date, min/max usually aren't numeric ranges
-                col_min = 0.0
-                col_max = 0.0
-
-            feature: Feature = Feature(
-                name=col_name, min=col_min, max=col_max, type=feature_type
-            )
-            config.features.append(feature)
-            self.logger.debug(
-                "Detected feature '%s' as %s (min=%.2f, max=%.2f)",
-                col_name,
-                feature_type,
-                col_min,
-                col_max,
+        Raises:
+            ValueError: If the datashape input is missing or has no target.
+        """
+        payload = self.get_input_data("datashape")
+        if payload is None:
+            raise ValueError(
+                "The Data Shape input is required for evaluation. "
+                "Create a data shape from the uploaded dataset on the project "
+                "Settings page and attach it as an evaluation input."
             )
 
-        self.logger.info("Parsed %d features from dataset", len(config.features))
-        return config.model_dump()
+        features = self._datashape_features(payload)
+        if not features:
+            raise ValueError(
+                "The Data Shape input carries no features; a data shape must be "
+                "derived from a dataset on the project Settings page."
+            )
 
-    def on_config_change(
-        self, form_data: ConfigForm | None
-    ) -> tuple[ConfigForm | None, dict[str, Any], dict[str, Any]]:
-        config_schema, ui_schema = self.get_full_schema()
-        ui_schema = copy.deepcopy(ui_schema)
-
-        if form_data is None:
-            ui_schema["date_feature"] = {"ui:widget": "hidden"}
-            ui_schema["target_feature"] = {"ui:widget": "hidden"}
-            ui_schema["frequency"] = {"ui:widget": "hidden"}
-            ui_schema["window_size"] = {"ui:widget": "hidden"}
-            return None, config_schema, ui_schema
-
-        # Convert to dict for property access if needed
-        form_dict = (
-            form_data.model_dump() if isinstance(form_data, ConfigForm) else form_data
+        target_col = next(
+            (str(f.get("name")) for f in features if f.get("role") == "target"),
+            None,
         )
+        if target_col is None:
+            raise ValueError(
+                "The Data Shape must designate a target feature (a feature with role 'target')."
+            )
 
-        if (
-            "properties" in config_schema
-            and "date_feature" in config_schema["properties"]
-        ):
-            possible_date_features = [
-                f["name"]
-                for f in form_dict.get("features", [])
-                if f["type"] in (FeatureType.DATE, FeatureType.CATEGORICAL)
-            ]
-            if possible_date_features:
-                # NOTE: adding an empty string will force the user to make a choice
-                possible_date_features.insert(0, "")
-                config_schema["properties"]["date_feature"] = {
-                    "title": "Date Feature",
-                    "type": "string",
-                    "enum": possible_date_features,
-                    "default": possible_date_features[0],
-                }
-                if isinstance(form_data, ConfigForm):
-                    if form_data.date_feature is None:
-                        form_data = form_data.model_copy(
-                            update={"date_feature": possible_date_features[0]}
-                        )
-                elif isinstance(form_data, dict):
-                    if form_data.get("date_feature") is None:
-                        form_data = {
-                            **form_data,
-                            "date_feature": possible_date_features[0],
-                        }
-            else:
-                ui_schema["date_feature"] = {"ui:widget": "hidden"}
-                ui_schema["frequency"] = {"ui:widget": "hidden"}
-                ui_schema["window_size"] = {"ui:widget": "hidden"}
+        date_feature = next((str(f.get("name")) for f in features if f.get("role") == "date"), None)
+        columns_features = [str(f.get("name")) for f in features if f.get("role") == "feature"]
 
-        if (
-            "properties" in config_schema
-            and "target_feature" in config_schema["properties"]
-        ):
-            possible_target_features = [
-                f["name"]
-                for f in form_dict.get("features", [])
-                if f["type"]
-                in (FeatureType.INTEGER, FeatureType.FLOAT, FeatureType.CATEGORICAL)
-            ]
-            if possible_target_features:
-                # NOTE: adding an empty string will force the user to make a choice
-                possible_target_features.insert(0, "")
-                config_schema["properties"]["target_feature"] = {
-                    "title": "Target Feature",
-                    "type": "string",
-                    "enum": possible_target_features,
-                    "default": possible_target_features[-1],
-                }
-                if isinstance(form_data, ConfigForm):
-                    if form_data.target_feature is None:
-                        form_data = form_data.model_copy(
-                            update={"target_feature": possible_target_features[-1]}
-                        )
-                elif isinstance(form_data, dict):
-                    if form_data.get("target_feature") is None:
-                        form_data = {
-                            **form_data,
-                            "target_feature": possible_target_features[-1],
-                        }
-            else:
-                ui_schema["target_feature"] = {"ui:widget": "hidden"}
-
-        return form_data, config_schema, ui_schema
+        return target_col, date_feature, columns_features

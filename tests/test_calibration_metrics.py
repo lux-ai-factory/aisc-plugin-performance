@@ -51,9 +51,7 @@ class TestExpectedCalibrationError:
         avg_acc = np.array([0.3, 0.5, 0.8])
         nonzero = np.array([True, True, True])
         n_samples = 30
-        ece = expected_calibration_error(
-            bin_counts, avg_conf, avg_acc, nonzero, n_samples
-        )
+        ece = expected_calibration_error(bin_counts, avg_conf, avg_acc, nonzero, n_samples)
         assert ece == pytest.approx(0.0, abs=1e-6)
 
     def test_overconfident_predictions(self):
@@ -63,9 +61,7 @@ class TestExpectedCalibrationError:
         avg_acc = np.array([0.5])  # But only 50% accurate
         nonzero = np.array([True])
         n_samples = 100
-        ece = expected_calibration_error(
-            bin_counts, avg_conf, avg_acc, nonzero, n_samples
-        )
+        ece = expected_calibration_error(bin_counts, avg_conf, avg_acc, nonzero, n_samples)
         assert ece == pytest.approx(0.4, abs=1e-6)  # |0.9 - 0.5| = 0.4
 
 
@@ -167,7 +163,5 @@ class TestClassificationCalibrationScoreMetrics:
     def test_y_pred_optional(self, binary_classification_data):
         """y_pred should be computed from y_pred_proba if not provided."""
         y_true, y_pred_proba, _ = binary_classification_data
-        results = classification_calibration_score_metrics(
-            y_true, y_pred_proba, y_pred=None
-        )
+        results = classification_calibration_score_metrics(y_true, y_pred_proba, y_pred=None)
         assert len(results) == 3

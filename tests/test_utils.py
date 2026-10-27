@@ -1,44 +1,6 @@
 """Tests for utility functions."""
 
-from predictive_insights.utils import (
-    Feature,
-    FeatureType,
-    group_metrics,
-)
-
-
-class TestFeatureType:
-    """Tests for FeatureType enum."""
-
-    def test_feature_type_values(self):
-        assert FeatureType.INTEGER.value == "Integer"
-        assert FeatureType.FLOAT.value == "Float"
-        assert FeatureType.CATEGORICAL.value == "Categorical"
-        assert FeatureType.DATE.value == "Date"
-
-    def test_feature_type_is_string_enum(self):
-        assert isinstance(FeatureType.INTEGER, str)
-        assert FeatureType.INTEGER == "Integer"
-
-
-class TestFeature:
-    """Tests for Feature model."""
-
-    def test_feature_creation(self):
-        feature = Feature(name="test_col", min=0.0, max=100.0, type=FeatureType.FLOAT)
-        assert feature.name == "test_col"
-        assert feature.min == 0.0
-        assert feature.max == 100.0
-        assert feature.type == FeatureType.FLOAT
-
-    def test_feature_model_dump(self):
-        feature = Feature(name="age", min=18.0, max=65.0, type=FeatureType.INTEGER)
-        dump = feature.model_dump()
-        assert dump["name"] == "age"
-        assert dump["min"] == 18.0
-        assert dump["max"] == 65.0
-        assert dump["type"] == FeatureType.INTEGER
-        assert "pid" in dump
+from predictive_insights.utils import group_metrics
 
 
 class TestGroupMetrics:
